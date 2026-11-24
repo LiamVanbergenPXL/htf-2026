@@ -726,3 +726,29 @@ body:has(.achrona-world) .join-code { left:6.5rem; }
   /* Status select and Save button wrap instead of running off the card. */
   .glitch-table form > div { flex-wrap: wrap; }
 }
+
+/* Restored from e3070c0 (lost in merge 934567b): map positions and team signature. */
+.team-signature {
+  margin: 0 0 .3rem;
+  color: #775120;
+  font: 800 clamp(1.15rem, 2.3vw, 2rem)/1.1 var(--font-sc);
+  letter-spacing: .065em;
+}
+.world-title .team-signature {
+  display: table;
+  font-size: clamp(1rem, 2.8vw, 2.75rem);
+  letter-spacing: .035em;
+  padding: .16em .38em;
+  border-radius: .2rem;
+  color: #f7db9e;
+  background: #152521e6;
+}
+
+.world-locations :is([data-anchor], .world-player, .quest-shadow) {
+  left: var(--map-x);
+  top: var(--map-y);
+}
+.achrona-world[data-3d] [data-anchor] {
+  left: var(--projected-x, -100%);
+  top: var(--projected-y, -100%);
+}
