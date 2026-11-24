@@ -7,10 +7,13 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Sidebar } from '#/components/layout/Sidebar'
+import { getCurrentGuardianFn } from '#/lib/auth.functions'
 
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
+  beforeLoad: async () => ({ guardian: await getCurrentGuardianFn() }),
+  headers: () => ({ 'Cache-Control': 'private, no-store' }),
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -24,9 +27,12 @@ export const Route = createRootRoute({
 })
 
 function AppLayout() {
+  const { guardian } = Route.useRouteContext()
+  if (!guardian) return <Outlet />
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar guardian={guardian} />
       <main className="min-w-0 flex-1 px-16 py-10">
         <Outlet />
       </main>

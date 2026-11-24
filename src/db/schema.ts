@@ -9,3 +9,35 @@ export const glitches = sqliteTable('glitches', {
   /** ISO 8601, so lexical order is chronological order. */
   timestamp: text('timestamp').notNull(),
 })
+
+export const guardians = sqliteTable('guardians', {
+  guardianId: text('guardian_id').primaryKey(),
+  codename: text('codename').notNull(),
+  role: text('role', {
+    enum: ['defender', 'commander'],
+  }).notNull(),
+})
+
+export const echoes = sqliteTable('echoes', {
+  echoId: text('echo_id').primaryKey(),
+  description: text('description').notNull(),
+  timestamp: text('timestamp').notNull(),
+  reportingGuardianId: text('reporting_guardian_id')
+      .notNull()
+      .references(() => guardians.guardianId),
+  glitchId: text('glitch_id')
+      .notNull()
+      .references(() => glitches.glitchId),
+})
+
+// Credentials are separate so guardian data never includes password hashes.
+export const guardianCredentials = sqliteTable('guardian_credentials', {
+  guardianId: text('guardian_id').primaryKey().references(() => guardians.guardianId),
+  passwordHash: text('password_hash').notNull(),
+})
+
+export const sessions = sqliteTable('sessions', {
+  tokenHash: text('token_hash').primaryKey(),
+  guardianId: text('guardian_id').notNull().references(() => guardians.guardianId),
+  expiresAt: text('expires_at').notNull(),
+})

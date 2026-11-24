@@ -10,9 +10,11 @@
     "generate-routes": "vite build",
     "build": "vite build",
     "preview": "vite preview",
+    "test:workflow": "node --test tests/echo-workflow.test.mjs",
     "db:push": "drizzle-kit push",
     "db:seed": "node src/db/seed.ts",
-    "db:setup": "npm run db:push && npm run db:seed",
+    "db:seed:accounts": "node src/db/seed-accounts.ts",
+    "db:setup": "npm run db:push && npm run db:seed && npm run db:seed:accounts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

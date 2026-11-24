@@ -17,8 +17,55 @@ Om op te starten kan je volgende commando's gebruiken.
 
 ```bash
 npm install
+npm run db:setup
 npm run dev
 ```
+
+Voer `npm run db:setup` eenmalig uit bij de eerste start. Dit maakt de tabellen in
+`local.db` aan en voegt voorbeeldglitches toe. Let op: de seed verwijdert bestaande
+echoes en vervangt glitches door de voorbeelddata. Gebruik `npm run db:push` om alleen het
+databaseschema bij te werken en bestaande gegevens te behouden.
+
+### Login en testaccounts
+
+Voor een bestaande installatie voeg je de login-tabellen en testaccounts toe met:
+
+```bash
+npm run db:push
+npm run db:seed:accounts
+```
+
+Dit behoudt bestaande glitches. De account-seed is herhaalbaar en wijzigt geen
+bestaande wachtwoorden.
+
+| Codename | Wachtwoord | Rol |
+| --- | --- | --- |
+| `defender` | `Defender2026!` | defender |
+| `commander` | `Commander2026!` | commander |
+
+Open `/login` om in te loggen. Uitloggen kan via het icoon onderaan de zijbalk.
+De sessie blijft acht uur geldig, ook na het vernieuwen van de pagina.
+Wachtwoorden worden met scrypt gehasht; sessietokens staan alleen als SHA-256-hash
+in de database. De cookie is HttpOnly, SameSite=Lax en in productie Secure.
+De account-seed weigert te draaien met `NODE_ENV=production`; deze bekende
+testaccounts zijn alleen voor lokale ontwikkeling.
+
+### Echoes en commanderrechten
+
+Beide rollen kunnen in het overzicht een echo melden met een beschrijving van
+maximaal 2000 tekens. De server gebruikt de ingelogde guardian en het huidige
+tijdstip. Elke melding maakt in één transactie een echo en een gekoppelde glitch
+met status `LEAKED` aan. Na het opslaan wordt het overzicht ververst.
+
+Commanders kunnen via de statuskeuze en **Opslaan** een glitch wijzigen naar
+`LEAKED`, `ASSESSING`, `CONTAINING` of `FIXED`. De server controleert de rol bij
+elke wijziging. Defenders zien de huidige status zonder bewerkingsknoppen.
+
+Voer `npm run test:workflow` uit voor de HTTP-integratietests. Deze gebruiken een
+tijdelijke database en testserver, en controleren onder andere validatie,
+sessiecontrole, transactierollback en commanderrechten. Bestaande gegevens
+blijven behouden.
+
 ## Beoordeling
 > Hoe wij beoordelen wordt voor de start van de hackathon met alle studenten gedeeld, zodat dit meteen duidelijk is voor iedereen.
 
