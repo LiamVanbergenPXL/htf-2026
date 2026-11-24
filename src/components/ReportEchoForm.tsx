@@ -137,24 +137,24 @@ export function ReportEchoForm({ role }: { role: 'defender' | 'commander' }) {
   }
 
   return (
-    <section aria-labelledby="report-echo-title" className="rounded-2xl border border-line bg-panel p-6">
-      <h2 id="report-echo-title" className="text-xl font-semibold">Echo melden</h2>
-      <p className="mt-1 text-sm text-muted">Meld een afwijking in Achrona. Je melding wordt automatisch een nieuwe glitch.</p>
+    <section aria-labelledby="report-echo-title" className="stat-block p-6">
+      <h2 id="report-echo-title" className="tome-heading text-2xl">Echo melden</h2>
+      <p className="mt-2 italic text-muted">Meld een afwijking in Achrona. Je melding wordt automatisch een nieuwe glitch.</p>
       <EchoGuardian speaking={speaking} listening={listening} prompting={prompting} text={spokenText} success={Boolean(success)} />
       <form onSubmit={handleSubmit} aria-busy={pending} className="mt-5 flex flex-col gap-3">
-        <label htmlFor="echo-description" className="text-sm font-medium">Beschrijving</label>
+        <label htmlFor="echo-description" className="font-sc text-base font-bold text-accent">Beschrijving</label>
         <div className="relative">
           <textarea id="echo-description" name="description" value={description}
           onChange={(event) => setDescription(event.target.value)}
           required maxLength={MAX_ECHO_DESCRIPTION_LENGTH} rows={3} disabled={pending}
           readOnly={speechActive} aria-describedby="echo-description-help echo-speech-status"
-          className="block w-full resize-y rounded-lg border border-line bg-white px-3 pt-2 pr-16 pb-14 outline-accent disabled:opacity-60"
+          className="tome-input block w-full resize-y px-3 pt-2 pr-16 pb-14 disabled:opacity-60"
           placeholder="Wat heb je opgemerkt?" />
           <button type="button" onClick={toggleDictation}
             disabled={pending || !speechSupported || (!speechActive && description.length >= MAX_ECHO_DESCRIPTION_LENGTH)}
             aria-label={speechActive ? 'Stop inspreken' : 'Beschrijving inspreken'} aria-pressed={speechActive}
             title={speechActive ? 'Stop inspreken' : 'Beschrijving inspreken'}
-            className={`absolute right-3 bottom-3 flex size-10 items-center justify-center rounded-full text-white shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 ${speechActive ? 'bg-red-600 hover:bg-red-700' : 'bg-accent hover:opacity-90'}`}>
+            className={`absolute right-3 bottom-3 flex size-10 items-center justify-center rounded-full border-2 border-gilt text-[#fbf2dc] shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gilt disabled:opacity-40 ${speechActive ? 'bg-arcane hover:brightness-110' : 'bg-accent hover:brightness-110'}`}>
             {speechActive ? <Square aria-hidden="true" className="size-4" fill="currentColor" /> : <Mic aria-hidden="true" className="size-5" />}
           </button>
         </div>
@@ -165,17 +165,17 @@ export function ReportEchoForm({ role }: { role: 'defender' | 'commander' }) {
             : speechSupported === false ? 'Spraakherkenning is niet beschikbaar in deze browser. Je kunt je beschrijving typen.'
               : 'Gebruik de microfoon om in te spreken. Controleer je tekst voor je de echo meldt.'}
         </p>
-        {speechError ? <p role="alert" className="text-sm text-red-700">{speechError}</p> : null}
-        <fieldset className="mt-3 rounded-xl border border-dashed border-line bg-subtle/50 p-4" disabled={pending}>
-          <legend className="px-2 text-sm font-medium">Afbeelding toevoegen <span className="font-normal text-muted">(optioneel)</span></legend>
+        {speechError ? <p role="alert" className="text-sm font-semibold text-accent">{speechError}</p> : null}
+        <fieldset className="mt-3 border border-dashed border-[#a88a5c] bg-[#ecdcb6]/40 p-4" disabled={pending}>
+          <legend className="px-2 font-sc font-bold text-accent">Afbeelding toevoegen <span className="font-sans font-normal italic text-muted">(optioneel)</span></legend>
           <label htmlFor="echo-image" className="mb-3 block text-sm text-muted">Toon de ernst van de situatie met een foto of screenshot.</label>
           <input ref={imageInput} id="echo-image" name="image" type="file" accept={ECHO_IMAGE_TYPES.join(',')}
             onChange={(event) => selectImage(event.target.files?.[0])} aria-describedby="echo-image-help"
-            className="block w-full min-w-0 text-sm text-muted file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-accent/10 file:px-3 file:py-2 file:font-medium file:text-accent" />
+            className="block w-full min-w-0 text-sm text-muted file:mr-3 file:cursor-pointer file:rounded file:border file:border-[#a88a5c] file:bg-[#fffaf0] file:px-3 file:py-1.5 file:font-sc file:font-bold file:text-accent" />
           <p id="echo-image-help" className="mt-2 text-xs text-muted">Eén JPG-, PNG- of WebP-afbeelding, maximaal 5 MB.</p>
           {image ? (
             <div className="mt-4 flex flex-wrap items-start gap-4">
-              {preview ? <img src={preview} alt="Voorbeeld van de geselecteerde afbeelding" className="max-h-48 max-w-full rounded-lg object-contain" /> : null}
+              {preview ? <img src={preview} alt="Voorbeeld van de geselecteerde afbeelding" className="max-h-48 max-w-full border-4 border-[#fffaf0] object-contain shadow-md shadow-[#3c1e0a]/40" /> : null}
               <div className="min-w-0">
                 <p className="max-w-60 break-words text-xs text-muted">{image.name}</p>
                 <button type="button" onClick={removeImage} className="mt-2 text-sm font-medium text-accent underline">Afbeelding verwijderen</button>
@@ -183,10 +183,10 @@ export function ReportEchoForm({ role }: { role: 'defender' | 'commander' }) {
             </div>
           ) : null}
         </fieldset>
-        {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
-        {success ? <p role="status" className="text-sm text-green-800">{success}</p> : null}
+        {error ? <p role="alert" className="text-sm font-semibold text-accent">{error}</p> : null}
+        {success ? <p role="status" className="text-sm font-semibold text-[#3d6b45]">{success}</p> : null}
         <button type="submit" disabled={pending || speechActive || !description.trim()}
-          className="self-start rounded-lg bg-accent px-5 py-2.5 font-medium text-white transition hover:opacity-90 disabled:opacity-50">
+          className="tome-button self-start px-5 py-2.5">
           {pending ? 'Bezig met melden…' : 'Echo melden'}
         </button>
       </form>

@@ -40,15 +40,15 @@ export function GlitchStatusControl({ glitch }: { glitch: Glitch }) {
       <div className="flex items-center gap-2">
         <label htmlFor={id} className="sr-only">Status wijzigen voor {glitch.glitchId}</label>
         <select id={id} value={status} onChange={(event) => setStatus(event.target.value as GlitchStatus)}
-          disabled={pending} className="rounded-lg border border-line bg-white px-2 py-2 text-xs outline-accent disabled:opacity-60">
+          disabled={pending} className="tome-select px-2 py-1.5 text-sm disabled:opacity-60">
           {GLITCH_STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
         <button type="submit" disabled={pending || status === glitch.status}
-          className="rounded-lg bg-accent px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
+          className="tome-button px-3 py-1.5 text-sm">
           {pending ? 'Opslaan…' : 'Opslaan'}
         </button>
       </div>
-      {error ? <p role="alert" className="max-w-64 text-xs text-red-700">{error}</p> : null}
+      {error ? <p role="alert" className="max-w-64 text-xs font-semibold text-accent">{error}</p> : null}
     </form>
   )
 }
