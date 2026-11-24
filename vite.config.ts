@@ -26,6 +26,7 @@ const config = defineConfig(({ mode }) => {
     plugins: [
       devtools(),
       nitro({
+        traceDeps: ['pdfkit'],
         rollupConfig: {
           external: [/^@sentry\//, 'pdfkit'],
           // Overrides nitro's own onwarn, so its default ignore list is repeated here.

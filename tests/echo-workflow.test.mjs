@@ -199,10 +199,19 @@ test('echo reporting and commander permissions through real HTTP server function
     }
 
     await t.test('multipart submission without an image remains supported', async () => {
-      const { response, body } = await rpc('reportEcho', upload('No photo needed'), defender)
+      const report = upload('No photo needed')
+      report.set('buildingId', 'archive')
+      const { response, body } = await rpc('reportEcho', report, defender)
       assert.equal(response.status, 200, body)
       assert.equal(count('echoes'), 3)
       assert.equal(count('echo_images'), 0)
+      const overview = await fetch(base, { headers: { cookie: defender } })
+      assert.match(await overview.text(), /aria-label="Raadsarchief, 1 actieve glitch"/)
+      const invalid = upload('Invalid location')
+      invalid.set('buildingId', 'unknown')
+      const rejected = await rpc('reportEcho', invalid, defender)
+      assert.match(rejected.body, /geldig gebouw/)
+      assert.equal(count('echoes'), 3)
     })
 
     await t.test('uploaded image is linked, listed, and served only to logged-in guardians', async () => {

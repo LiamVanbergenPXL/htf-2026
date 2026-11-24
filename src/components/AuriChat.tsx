@@ -12,9 +12,10 @@ type AuriChatProps = {
   speaking: boolean
   onRead: (text: string) => void
   onStop: () => void
+  onGlitch: (id: string) => void
 }
 
-export function AuriChat({ busy, speaking, onRead, onStop }: AuriChatProps) {
+export function AuriChat({ busy, speaking, onRead, onStop, onGlitch }: AuriChatProps) {
   const ask = useServerFn(askAuri)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [question, setQuestion] = useState('')
@@ -95,6 +96,11 @@ export function AuriChat({ busy, speaking, onRead, onStop }: AuriChatProps) {
                   <p className="text-[10px] font-medium text-muted">Gebruikte incidenten</p>
                   <div className="mt-1 flex flex-wrap gap-2">
                     {message.sources.map((source) => <a key={source.glitchId} href={`#glitch-${source.glitchId}`} title={source.description}
+                      onClick={(event) => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+                        event.preventDefault()
+                        onGlitch(source.glitchId)
+                      }}
                       className="max-w-48 truncate text-xs font-medium text-accent underline">{source.glitchId} · {source.status}</a>)}
                   </div>
                 </div>

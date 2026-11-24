@@ -3,9 +3,11 @@ import {GlitchesTable} from '#/components/GlitchesTable.tsx'
 import {getGlitches} from '#/lib/glitches.functions.ts'
 import {ReportEchoForm} from '#/components/ReportEchoForm'
 import {RealmIntegrityMeter} from '#/components/RealmIntegrityMeter'
-import {RealmDragon} from '#/components/RealmDragon'
 import {calculateRealmIntegrity, type RealmLevel} from '#/lib/realm-integrity'
-import {useEffect} from 'react'
+import {useEffect, useRef, useState} from 'react'
+import {X} from 'lucide-react'
+import {AchronaMap} from '#/components/AchronaMap'
+import {ACHRONA_BUILDINGS, type BuildingId} from '#/lib/achrona-map'
 
 export const Route = createFileRoute('/')({
   beforeLoad: ({ context }) => {
@@ -18,25 +20,97 @@ export const Route = createFileRoute('/')({
 function OverviewPage() {
   const { glitches, defenders } = Route.useLoaderData()
   const { guardian } = Route.useRouteContext()
-  const { level, integrity } = calculateRealmIntegrity(glitches)
+  const { level } = calculateRealmIntegrity(glitches)
+  const [building, setBuilding] = useState<BuildingId | null>(null)
+  const dialog = useRef<HTMLDialogElement>(null)
+  const roomTitle = useRef<HTMLHeadingElement>(null)
+  const room = ACHRONA_BUILDINGS.find(({ id }) => id === building)
+  const localGlitches = building ? glitches.filter(({ buildingId }) => buildingId === building) : []
+  const [glitchLink, setGlitchLink] = useState<{ id: string; version: number } | null>(null)
   useRealmLevelOnPage(level)
 
+  function openGlitch(id: string) {
+    setBuilding('post')
+    setGlitchLink((current) => ({ id, version: (current?.version ?? 0) + 1 }))
+  }
+
+  useEffect(() => {
+    function openLinkedGlitch() {
+      const hash = window.location.hash
+      if (hash.startsWith('#glitch-')) openGlitch(hash.slice('#glitch-'.length))
+    }
+    openLinkedGlitch()
+    window.addEventListener('hashchange', openLinkedGlitch)
+    return () => window.removeEventListener('hashchange', openLinkedGlitch)
+  }, [])
+
+  useEffect(() => {
+    const modal = dialog.current
+    if (!modal) return
+    if (!building) {
+      if (modal.open) modal.close()
+      return
+    }
+    if (!modal.open) modal.showModal()
+    modal.scrollTop = 0
+    roomTitle.current?.focus({ preventScroll: true })
+  }, [building])
+
+  useEffect(() => {
+    if (!glitchLink || building !== 'post') return
+    document.getElementById(`glitch-${glitchLink.id}`)?.scrollIntoView({ block: 'center' })
+  }, [glitchLink, building])
+
+  function visitBuilding(id: BuildingId) {
+    setGlitchLink(null)
+    setBuilding(id)
+  }
+
   return (
-    <div className="relative flex flex-col gap-8" data-intensity={level}>
-      <RealmDragon integrity={integrity} />
-      {/* Above the background dragon and its fire. */}
-      <header className="relative z-10 flex">
-        <h1 className="font-display text-5xl leading-none text-fg sm:text-6xl">
-          <span className="desync-glitch" data-text="Overview">Overview</span>
-        </h1>
-      </header>
-      <RealmIntegrityMeter glitches={glitches} />
-      {guardian ? <ReportEchoForm role={guardian.role} /> : null}
-      <a href="/reports/achrona.pdf" download className="self-start rounded bg-accent px-4 py-2 text-white">
-        Rapport opslaan als PDF
-      </a>
-      <GlitchesTable defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined} glitches={glitches} canChangeStatus={guardian?.role === 'commander'} />
-    </div>
+    <>
+      <AchronaMap glitches={glitches} level={level} paused={building !== null} onVisit={visitBuilding}
+        integrityHud={<RealmIntegrityMeter glitches={glitches} />} />
+      <dialog ref={dialog} className="world-dialog" aria-labelledby="world-room-title"
+        onCancel={(event) => { event.preventDefault(); setBuilding(null) }}
+        onClick={(event) => { if (event.target === event.currentTarget) setBuilding(null) }}>
+        <div className="world-interior">
+          <header className="world-room-header">
+            {room && <div className="world-portrait" key={room.id}>
+              <img src={`/images/achrona/${room.portrait}.webp`} alt="" />
+            </div>}
+            <div>
+              <h2 id="world-room-title" ref={roomTitle} tabIndex={-1}>{room?.name}</h2>
+              <p>{room?.action}</p>
+            </div>
+            <button type="button" className="world-close" onClick={() => setBuilding(null)} aria-label="Gebouw verlaten"><X /></button>
+          </header>
+          <div className="world-room-content">
+            {localGlitches.length > 0 && (
+              <details key={building} className="world-local-glitches">
+                <summary>Glitches op deze locatie ({localGlitches.length})</summary>
+                <ul>
+                  {localGlitches.map((glitch) => (
+                    <li key={glitch.glitchId}>
+                      <button type="button" onClick={() => openGlitch(glitch.glitchId)}>
+                        <strong>{glitch.status}</strong> · {glitch.description}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {guardian && <ReportEchoForm role={guardian.role} onGlitch={openGlitch} room={building === 'gate' || building === 'oracle' ? building : null} />}
+            <section hidden={building !== 'archive'} className="stat-block p-6">
+              <a href="/reports/achrona.pdf" download className="tome-button inline-block px-4 py-2">Rapport opslaan als PDF</a>
+            </section>
+            <div hidden={building !== 'post'}>
+              <GlitchesTable key={glitchLink?.version} defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined}
+                glitches={glitches} canChangeStatus={guardian?.role === 'commander'} />
+            </div>
+          </div>
+        </div>
+      </dialog>
+    </>
   )
 }
 

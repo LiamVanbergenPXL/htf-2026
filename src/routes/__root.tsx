@@ -34,7 +34,7 @@ function AppLayout() {
     <div className="flex min-h-screen">
       <Sidebar guardian={guardian} />
       {/* overflow-x-clip: the glitch layers shift a few pixels and must not cause a page scrollbar. */}
-      <main className="parchment min-w-0 flex-1 overflow-x-clip px-5 py-8 sm:px-10 lg:px-16 lg:py-12">
+      <main className="parchment app-main min-w-0 flex-1 overflow-x-clip">
         <Outlet />
       </main>
     </div>

@@ -4,12 +4,13 @@ import { db } from '#/db/index.ts'
 import { echoes, echoImages, glitches } from '#/db/schema.ts'
 import { requireGuardian } from './auth.server'
 import { MAX_ECHO_DESCRIPTION_LENGTH } from './echo'
+import { isBuildingId } from './achrona-map'
 import { validateEchoImage } from './echo-image.server'
 
 export const reportEcho = createServerFn({ method: 'POST' })
   .validator((input: unknown) => {
     const multipart = input instanceof FormData
-    const data = multipart ? { description: input.get('description') } : input as { description?: unknown } | null
+    const data = multipart ? { description: input.get('description'), buildingId: input.get('buildingId') } : input as { description?: unknown; buildingId?: unknown } | null
     if (!data || typeof data.description !== 'string') {
       throw new Error('Vul een beschrijving in.')
     }
@@ -19,7 +20,9 @@ export const reportEcho = createServerFn({ method: 'POST' })
     }
     const image = multipart ? input.get('image') : null
     if (image !== null && !(image instanceof File)) throw new Error('Ongeldig afbeeldingsbestand.')
-    return { description, image }
+    const buildingId = data.buildingId ?? null
+    if (buildingId !== null && !isBuildingId(buildingId)) throw new Error('Kies een geldig gebouw.')
+    return { description, image, buildingId }
   })
   .handler(async ({ data }) => {
     const guardian = requireGuardian()
@@ -31,7 +34,7 @@ export const reportEcho = createServerFn({ method: 'POST' })
 
     // Echo, glitch and optional image commit together; no partial reports.
     db.transaction((tx) => {
-      tx.insert(glitches).values({ glitchId, status: 'LEAKED', description: data.description, timestamp }).run()
+      tx.insert(glitches).values({ glitchId, buildingId: data.buildingId, status: 'LEAKED', description: data.description, timestamp }).run()
       tx.insert(echoes).values({
         echoId, glitchId, description: data.description, timestamp,
         reportingGuardianId: guardian.guardianId,
