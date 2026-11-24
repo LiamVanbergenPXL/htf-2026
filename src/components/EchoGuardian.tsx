@@ -17,7 +17,7 @@ export function EchoGuardian({ speaking, listening, prompting, text, success }: 
           : 'Welkom, wachter. Ik ben Auri, hoeder van Achrona. Welke onrust heb je waargenomen?'
 
   return (
-    <div className="echo-guardian-panel my-5 flex flex-col items-center gap-4 rounded-2xl border border-violet-200/70 bg-gradient-to-br from-violet-50 via-white to-indigo-50 px-5 py-4 sm:flex-row" data-state={state}>
+    <div className="echo-guardian-panel my-5 flex flex-col items-center gap-4 border border-arcane/35 bg-[radial-gradient(circle_at_15%_50%,rgb(123_63_228/.16),rgb(123_63_228/.05)_60%)] px-5 py-4 sm:flex-row" data-state={state}>
       <div className="echo-guardian relative h-32 w-28 shrink-0" aria-hidden="true">
         <svg viewBox="0 0 140 160" className="h-full w-full overflow-visible" fill="none">
           <ellipse cx="70" cy="151" rx="35" ry="5" fill="#6d4aff" opacity=".12" />
@@ -57,11 +57,11 @@ export function EchoGuardian({ speaking, listening, prompting, text, success }: 
       </div>
       <div className="min-w-0 flex-1">
         <div className="mb-2 flex items-center gap-2">
-          <span className="text-sm font-semibold text-violet-950">Auri</span>
-          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">Guardian van Achrona</span>
+          <span className="font-display text-2xl leading-none text-violet-950">Auri</span>
+          <span className="font-sc text-sm italic text-arcane">Guardian van Achrona</span>
           {speaking ? <Volume2 className="size-4 text-accent" aria-label="Auri spreekt" /> : null}
         </div>
-        <p className="text-sm leading-relaxed text-violet-950">{message}</p>
+        <p className="leading-relaxed italic text-violet-950">{message}</p>
         <div className="mt-3 flex h-4 items-center gap-1 text-accent" aria-hidden="true">
           {[0, 1, 2, 3, 4, 5, 6].map((index) => <span key={index} className="guardian-voice-bar w-1 rounded-full bg-current" style={{ animationDelay: `${index * -0.11}s`, height: `${index % 2 ? 5 : 9}px` }} />)}
         </div>
