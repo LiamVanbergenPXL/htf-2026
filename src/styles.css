@@ -752,3 +752,11 @@ body:has(.achrona-world) .join-code { left:6.5rem; }
   left: var(--projected-x, -100%);
   top: var(--projected-y, -100%);
 }
+
+/* The QR code sits just right of the sidebar, so it follows the sidebar when it
+   expands (w-24 → w-64) with the same 200ms transition. Phones hide it entirely. */
+body:has(.achrona-world) .join-code { transition: left .2s cubic-bezier(.4, 0, .2, 1); }
+body:has(.achrona-world):has(.leather-spine.items-stretch) .join-code { left: 16.5rem; }
+@media (prefers-reduced-motion: reduce) {
+  body:has(.achrona-world) .join-code { transition: none; }
+}
