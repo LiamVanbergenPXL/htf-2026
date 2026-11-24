@@ -25,7 +25,7 @@ export const reportEcho = createServerFn({ method: 'POST' })
     return { description, image, buildingId }
   })
   .handler(async ({ data }) => {
-    const guardian = requireGuardian()
+    const guardian = await requireGuardian()
     const image = data.image ? await validateEchoImage(data.image) : null
     if (image && !image.success) return image
     const timestamp = new Date().toISOString()
@@ -33,14 +33,14 @@ export const reportEcho = createServerFn({ method: 'POST' })
     const echoId = `EC-${randomUUID()}`
 
     // Echo, glitch and optional image commit together; no partial reports.
-    db.transaction((tx) => {
-      tx.insert(glitches).values({ glitchId, buildingId: data.buildingId, status: 'LEAKED', description: data.description, timestamp }).run()
-      tx.insert(echoes).values({
+    await db.transaction(async (tx) => {
+      await tx.insert(glitches).values({ glitchId, buildingId: data.buildingId, status: 'LEAKED', description: data.description, timestamp }).run()
+      await tx.insert(echoes).values({
         echoId, glitchId, description: data.description, timestamp,
         reportingGuardianId: guardian.guardianId,
       }).run()
       if (image?.success) {
-        tx.insert(echoImages).values({ echoId, contentType: image.contentType, data: image.bytes }).run()
+        await tx.insert(echoImages).values({ echoId, contentType: image.contentType, data: image.bytes }).run()
       }
     })
     return { success: true, echoId, glitchId } as const

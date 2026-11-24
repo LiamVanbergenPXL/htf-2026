@@ -8,10 +8,11 @@ export const Route = createFileRoute('/reports/achrona.pdf')({
     handlers: {
       GET: async () => {
         const headers = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }
-        const guardian = getCurrentGuardian()
+        const guardian = await getCurrentGuardian()
         if (!guardian) return new Response('Log eerst in.', { status: 401, headers })
 
-        const pdf = await renderCouncilReport(readGlitchOverview(guardian.role).glitches)
+        if (guardian.guardianId.startsWith('guest-')) return new Response('Alleen voor Guardians.', {status: 403, headers})
+        const pdf = await renderCouncilReport((await readGlitchOverview(guardian.role)).glitches)
         return new Response(new Uint8Array(pdf), {
           headers: {
             ...headers,

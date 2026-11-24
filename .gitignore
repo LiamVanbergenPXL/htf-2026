@@ -15,3 +15,8 @@ todos.json
 # SQLite
 local.db*
 /.idea
+
+.vercel/
+.env.vercel.local
+.vercel
+.env*

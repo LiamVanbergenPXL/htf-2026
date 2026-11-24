@@ -22,7 +22,9 @@ const config = defineConfig(({ mode }) => {
     if (process.env[key] === undefined && serverEnv[key] !== undefined) process.env[key] = serverEnv[key]
   }
   return {
-    resolve: { tsconfigPaths: true },
+    server: { host: true },
+    resolve: { tsconfigPaths: true, alias: process.env.VERCEL
+      ? [{ find: /^@libsql\/client$/, replacement: '@libsql/client/web' }] : [] },
     plugins: [
       devtools(),
       nitro({

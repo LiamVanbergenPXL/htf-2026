@@ -646,3 +646,29 @@ html[data-realm="DESYNC"] .fire-layer { transform-box: fill-box; transform-origi
 .hud-sim-note { font-size: .75rem; color: #decfb3; }
 .hud-sim-note:empty { display: none; }
 .hud-sim-error { font-size: .75rem; font-weight: 700; color: #ffb4a2; }
+.realm-peer { position: absolute; transform: translate(-50%,-100%); z-index: 95; display: grid; justify-items: center; pointer-events: none; width: max-content; max-width: min(15rem,45vw); text-align: center; }
+.realm-peer img { width: clamp(35px,6vw,72px); height: auto; }
+.realm-name { font: 700 .73rem var(--font-sc); padding: .12rem .35rem; color: #f8e6bd; background: #182723ed; border-radius: .25rem; }
+.realm-speech { background: #fff4d9; color: #2b251e; border: 1px solid #a98450; border-radius: .7rem .7rem .7rem .1rem; padding: .32rem .55rem; overflow-wrap: anywhere; max-width: 100%; box-shadow: 0 3px 10px #14191555; font-size: .92rem; line-height: 1.15; }
+.achrona-world:not([data-3d]) .own-speech { margin-top: clamp(-84px,-7vw,-40px); }
+.herald-sprite { display: flex; align-items: center; animation: herald-arrives .8s ease-out; }
+@keyframes herald-arrives { from { transform: translate(-30%, -30%); opacity: 0; } }
+.realm-chat { position: absolute; right: 1rem; bottom: 12rem; z-index: 3; color: #ffebbd; }
+.realm-chat button, .realm-chat form { background: #172523f5; border: 1px solid #ad9264; border-radius: .45rem; padding: .45rem .7rem; }
+.realm-chat button { display: flex; gap: .45rem; align-items: center; margin-left: auto; cursor: pointer; font: 700 .85rem var(--font-sc); }
+.realm-chat form { position: absolute; bottom: 105%; right: 0; width: min(17rem,67vw); display: grid; gap: .4rem; }
+.realm-chat input { min-width: 0; padding: .35rem; color: #291f13; background: #fff4df; }
+.realm-chat button:disabled { opacity: .55; }
+.join-screen { display:grid; place-items:center; min-height:100dvh; padding:1rem; background:#213135; }
+.join-code { position:fixed; bottom:.5rem; left:.5rem; z-index:45; width:78px; text-align:center; color:#2e2319; background:#fff9e9; border-radius:.35rem; box-shadow:0 2px 10px #0005; font:700 .75rem var(--font-sc); }
+.join-code img { width:100%; border-radius:.35rem; }
+body:has(.achrona-world) .join-code { left:6.5rem; }
+@media(max-width:640px){ .join-code {width:60px;} body:has(.achrona-world) .join-code {left:.15rem; bottom:9.6rem; width:48px;} .join-screen button,.realm-chat button,.world-character-button,.world-camera { min-height:44px; } }
+.touch-walk {display:none}
+@media(pointer:coarse){.touch-walk{position:absolute;z-index:3;display:grid;place-items:center;bottom:1rem;left:.6rem;width:64px;height:64px;border:2px solid #af9767;border-radius:50%;background:#1b302ee8;color:#ebd9af;font-size:2rem;touch-action:none;user-select:none}.world-controls{display:none}.quest-panel{bottom:auto}.world-character-button{bottom:4rem}.world-camera{bottom:.8rem}.realm-chat{bottom:7.3rem}}
+.join-code > button { width:100%; cursor:zoom-in; }
+.join-invite { margin:auto; max-width:calc(100vw - 2rem); padding:1rem; border-radius:.6rem; background:#fff9e9; color:#2e2319; text-align:center; }
+.join-invite::backdrop { background:#09191bbf; }
+.join-invite h2 {font:1.65rem var(--font-display);}
+.join-code .join-invite img {width:min(240px,70vw);height:auto;margin:.5rem auto;}
+.join-invite a,.join-invite button {display:block;margin:.35rem auto;padding:.5rem;text-decoration:underline;}

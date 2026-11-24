@@ -8,7 +8,7 @@ import { resolve, join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 import Database from 'better-sqlite3'
-import { toJSON } from 'seroval'
+import { fromCrossJSON, toJSON } from 'seroval'
 
 // SQL below runs against a temporary database created for each test run.
 // Suppress only the IDE datasource warning; SQL validation remains enabled.
@@ -48,21 +48,25 @@ test('echo reporting and commander permissions through real HTTP server function
     }
     assert.ok(ready, logs)
     const endpoints = {}
-    for (const file of ['auth', 'echoes', 'glitches', 'auri', 'simulator']) {
+    for (const file of ['auth', 'echoes', 'glitches', 'auri', 'simulator', 'multiplayer']) {
       const source = await (await fetch(`${base}/src/lib/${file}.functions.ts`)).text()
       for (const match of source.matchAll(/export const (\w+) = [^\n]*createClientRpc\("([^"]+)"/g)) {
         endpoints[match[1]] = `${base}/_serverFn/${match[2]}`
       }
     }
-    async function rpc(name, data, cookie = '') {
+    async function rpc(name, data, cookie = '', slot = '') {
       assert.ok(endpoints[name], `Missing endpoint ${name}`)
       const multipart = data instanceof FormData
       const response = await fetch(endpoints[name], {
         method: name === 'getGlitches' ? 'GET' : 'POST', redirect: 'manual',
-        headers: { origin: base, cookie, ...(!multipart ? { 'content-type': 'application/json' } : {}), 'x-tsr-serverFn': 'true', accept: 'application/json' },
+        headers: { origin: base, cookie, ...(slot ? { 'x-achrona-player': slot } : {}), ...(!multipart ? { 'content-type': 'application/json' } : {}), 'x-tsr-serverFn': 'true', accept: 'application/json' },
         body: name === 'getGlitches' ? undefined : multipart ? data : JSON.stringify(toJSON({ data })),
       })
       return { response, body: await response.text() }
+    }
+    function worldState({ body }) {
+      assert.match(body, /"self"/, body)
+      return fromCrossJSON(JSON.parse(body), { refs: new Map() }).result
     }
     async function login(codename, password) {
       const { response, body } = await rpc('loginFn', { codename, password })
@@ -76,6 +80,30 @@ test('echo reporting and commander permissions through real HTTP server function
     // noinspection SqlNoDataSourceInspection
     const count = (table) => sqlite.prepare(`SELECT count(*) AS n FROM ${table}`).get().n
     let glitchId
+
+    await t.test('two tabs sharing a cookie jar see the correct player, chat and isolated logout', async () => {
+      const slot = '623f007a-5b2d-46a9-be02-8bf49edab22b'
+      const login = await rpc('loginFn', { codename: 'commander', password: 'Commander2026!' }, defender, slot)
+      const secondary = login.response.headers.getSetCookie().findLast(value => value.startsWith(`guardian-session-${slot}=`) && /=[a-f0-9]{64}/.test(value))
+      assert.ok(secondary)
+      const jar = defender + '; ' + secondary.split(';')[0]
+      const pose = { x: 51, y: 53, character: 'guardian', angle: 1 }
+      const sync = async (data, tab) => worldState(await rpc('syncWorld', data, jar, tab))
+      const first = await sync({ ...pose, speech: { id: 'first', text: 'Bij de poort!' } })
+      assert.equal(first.self.role, 'defender')
+      const second = await sync({ ...pose, x: 59, character: 'archer', speech: { id: 'second', text: 'Ik kom eraan.' } }, slot)
+      assert.equal(second.self.role, 'commander')
+      assert.equal(second.others[0].message, 'Bij de poort!')
+      const peer = (await sync(pose)).others[0]
+      assert.equal(peer.x, 59)
+      assert.equal(peer.character, 'archer')
+      assert.equal(peer.message, 'Ik kom eraan.')
+      const page = await fetch(base + '/?speler=' + slot, { headers: { cookie: jar } })
+      assert.match(await page.text(), /Ingelogd als commander/)
+      await rpc('logoutFn', {}, jar, slot)
+      assert.equal((await sync(pose)).others.length, 0)
+      assert.match((await rpc('syncWorld', pose, jar, slot)).body, /login/)
+    })
 
     await t.test('AI chat requires login and reports an offline Ollama without making up answers', async () => {
       const anonymous = await rpc('askAuri', { question: 'Welke incidenten zijn actief?' })
@@ -120,6 +148,11 @@ test('echo reporting and commander permissions through real HTTP server function
       assert.equal(echo.reporting_guardian_id, 'guardian-defender')
       assert.equal(echo.timestamp, glitch.timestamp)
       assert.ok(Date.parse(echo.timestamp) >= before && Date.parse(echo.timestamp) <= Date.now())
+      const pose = { x: 55, y: 76, character: 'scout', angle: 0 }
+      for (const cookie of [defender, commander]) {
+        const snapshot = worldState(await rpc('syncWorld', pose, cookie))
+        assert.ok(snapshot.announcements.some(event => event.id === echo.echo_id && event.author === 'defender'))
+      }
       const list = await rpc('getGlitches', undefined, defender)
       assert.match(list.body, /Magic fading near the tower/)
     })
@@ -332,6 +365,22 @@ test('echo reporting and commander permissions through real HTTP server function
       assert.equal(count('echo_images'), 0)
       assert.equal(count('glitches'), 4)
       assert.equal(count('guardians'), 2)
+    })
+    await t.test('two devices join through the public game link with unique defender sessions', async () => {
+      const landing = await fetch(base + '/play')
+      assert.match(await landing.text(), /Speel mee als gast/)
+      const guests = []
+      for (let device = 0; device < 2; device++) {
+        const joined = await rpc('joinGame', undefined)
+        const cookie = joined.response.headers.getSetCookie().findLast(v => /guardian-session=[a-f0-9]{64}/.test(v)).split(';')[0]
+        const snapshot = worldState(await rpc('syncWorld', { x: 55, y: 76, character: 'scout', angle: 0 }, cookie))
+        assert.match(snapshot.self.guardianId, /^guest-/)
+        assert.equal(snapshot.self.role, 'defender')
+        assert.equal((await fetch(base + '/reports/achrona.pdf', { headers: { cookie } })).status, 403)
+        guests.push(snapshot.self.guardianId)
+        if (device) assert.ok(snapshot.others.some(p => p.guardianId === guests[0]))
+      }
+      assert.notEqual(guests[0], guests[1])
     })
   } finally {
     if (server && server.exitCode === null) {

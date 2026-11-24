@@ -1,10 +1,9 @@
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
 import * as schema from './schema.ts'
 
-// Server-only: never import this from client code.
-const sqlite = new Database(process.env.DB_FILE_NAME ?? 'local.db')
-sqlite.pragma('journal_mode = WAL')
-sqlite.pragma('foreign_keys = ON')
-
-export const db = drizzle(sqlite, { schema })
+const remote = process.env.TURSO_DATABASE_URL
+if (process.env.VERCEL && !remote) throw new Error('Configureer TURSO_DATABASE_URL en TURSO_AUTH_TOKEN in Vercel.')
+const client = createClient({ url: remote || `file:${process.env.DB_FILE_NAME ?? 'local.db'}`, authToken: process.env.TURSO_AUTH_TOKEN })
+if (!remote) await client.execute('PRAGMA foreign_keys = ON')
+export const db = drizzle(client, { schema })

@@ -1,4 +1,5 @@
 import * as T from 'three'
+import type { Player } from './multiplayer'
 import { buildHero } from './achrona-hero'
 import { characters, type CharacterId } from './achrona-characters'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
@@ -202,6 +203,25 @@ export function createRealm(canvas: HTMLCanvasElement) {
     hero.add(avatar.root)
     return { id, ...avatar }
   })
+  const visitors = new Map<string, { model: T.Group; character: CharacterId }>()
+  const herald = new T.Group()
+  const post = ACHRONA_BUILDINGS.find(b => b.id === 'post')!
+  const coat = 0x994739
+  round(herald, 0, 1.65, 0, .59, .86, 1.45, coat)
+  for (const x of [-.36, .36]) box(herald, x, .6, 0, .48, 1.1, .6, timber)
+  round(herald, 0, 2.85, 0, .53, .55, .88, 0xe3b787)
+  round(herald, 0, 3.41, 0, .35, .81, .36, coat)
+  beam(herald, [.51,2.13,0], [.75,2.49,.47], .27, coat)
+  beam(herald, [.75,2.49,.47], [.46,2.8,.65], .19, 0xe3b787)
+  // Leadpipe, loop and flared bell are aligned from the herald's mouth outwards.
+  beam(herald, [0,2.86,.43], [1.18,2.91,.8], .14, brass)
+  beam(herald, [.49,2.9,.65], [.53,2.51,.67], .11, brass)
+  beam(herald, [.53,2.51,.67], [1.08,2.54,.8], .11, brass)
+  beam(herald, [1.08,2.54,.8], [1.12,2.9,.8], .11, brass)
+  const bell = round(herald, 1.52, 2.94, .83, .41, .09, .81, brass)
+  bell.rotation.z = -Math.PI / 2
+  herald.scale.setScalar(1.45)
+  scene.add(herald)
   const beacon = mesh(scene, jewel, 0x8af5ef, 0, 2, 0)
   const wraith = mesh(scene, jewel, 0x91448a, 0, 2, 0)
   const fires = new Map<BuildingId,T.Group>()
@@ -227,11 +247,13 @@ export function createRealm(canvas: HTMLCanvasElement) {
   observer.observe(canvas)
   resize()
   return {
-    project(p: MapPoint) {
-      vector.copy(world(p)).project(camera)
+    project(p: MapPoint, elevation = 0) {
+      vector.copy(world(p))
+      vector.y = elevation
+      vector.project(camera)
       return { x: (vector.x + 1) * 50, y: (1 - vector.y) * 50 }
     },
-    frame(p: MapPoint, character: CharacterId, angle: number, moving: boolean, close: boolean, time: number, target: MapPoint | null, hazard: MapPoint | null, burning: Set<BuildingId>, reduced: boolean) {
+    frame(p: MapPoint, character: CharacterId, angle: number, moving: boolean, close: boolean, time: number, target: MapPoint | null, hazard: MapPoint | null, burning: Set<BuildingId>, reduced: boolean, peers: Player[], heraldAge: number | null) {
       const aspect = width / height
       const span = close ? Math.max(15, 11 / aspect) : Math.max(34, 55 / aspect)
       Object.assign(camera, { left: -span * aspect, right: span * aspect, top: span, bottom: -span })
@@ -246,6 +268,35 @@ export function createRealm(canvas: HTMLCanvasElement) {
       for (const avatar of avatars) {
         avatar.root.visible = avatar.id === character
         if (avatar.root.visible) avatar.animate(stride, time, reduced)
+      }
+      for (const [id, visitor] of visitors) {
+        if (!peers.some(p => p.guardianId === id && p.character === visitor.character)) {
+          scene.remove(visitor.model)
+          visitors.delete(id)
+        }
+      }
+      for (const peer of peers) {
+        let visitor = visitors.get(peer.guardianId)
+        const destination = world(peer)
+        if (!visitor) {
+          const model = avatars.find(a => a.id === peer.character)!.root.clone()
+          model.visible = true
+          model.position.copy(destination)
+          scene.add(model)
+          visitor = { model, character: peer.character }
+          visitors.set(peer.guardianId, visitor)
+        }
+        const moving = visitor.model.position.distanceTo(destination) > .15
+        visitor.model.position.lerp(destination, reduced ? 1 : .3)
+        visitor.model.position.y = moving && !reduced ? Math.abs(Math.sin(time * 12)) * .14 : 0
+        visitor.model.rotation.y = peer.angle
+      }
+      herald.visible = heraldAge !== null
+      if (heraldAge !== null) {
+        const step = reduced ? 1 : Math.max(0, Math.min(1, heraldAge, 6.8 - heraldAge))
+        herald.position.copy(world({ x: post.x + 3 * step, y: post.y + 6 * step }))
+        herald.rotation.y = .45
+        herald.position.y = !reduced && step < 1 ? Math.abs(Math.sin(heraldAge * 14)) * .19 : 0
       }
       for (const [id, fire] of fires) {
         fire.visible = burning.has(id)

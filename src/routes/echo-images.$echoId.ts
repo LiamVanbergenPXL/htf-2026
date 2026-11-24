@@ -7,10 +7,12 @@ import { getCurrentGuardian } from '#/lib/auth.server'
 export const Route = createFileRoute('/echo-images/$echoId')({
   server: {
     handlers: {
-      GET: ({ params }) => {
+      GET: async ({ params }) => {
         const headers = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }
-        if (!getCurrentGuardian()) return new Response('Log eerst in.', { status: 401, headers })
-        const image = db.select().from(echoImages).where(eq(echoImages.echoId, params.echoId)).get()
+        const guardian = await getCurrentGuardian()
+        if (!guardian) return new Response('Log eerst in.', { status: 401, headers })
+        if (guardian.guardianId.startsWith('guest-')) return new Response('Alleen voor Guardians.', {status: 403, headers})
+        const image = await db.select().from(echoImages).where(eq(echoImages.echoId, params.echoId)).get()
         if (!image) return new Response('Afbeelding niet gevonden.', { status: 404, headers })
         return new Response(new Uint8Array(image.data), {
           headers: { ...headers, 'Content-Type': image.contentType, 'Content-Length': String(image.data.length) },

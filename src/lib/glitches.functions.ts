@@ -9,7 +9,14 @@ import { readGlitchOverview } from './glitch-overview.server'
 import { GLITCH_STATUSES, type GlitchStatus } from './glitch'
 
 export const getGlitches = createServerFn({ method: 'GET' })
-  .handler(() => readGlitchOverview(requireGuardian().role))
+  .handler(async () => {
+    const guardian = await requireGuardian()
+    if (!guardian.guardianId.startsWith('guest-')) return readGlitchOverview(guardian.role)
+    const rows = await db.select({ glitchId: glitches.glitchId, status: glitches.status,
+      buildingId: glitches.buildingId, timestamp: glitches.timestamp }).from(glitches).all()
+    return { defenders: [], glitches: rows.map(row => ({ ...row, description: 'Afwijking in Achrona',
+      assignedDefenderId: null, assignedDefender: null, imageEchoIds: [], updates: [] })) }
+  })
 
 
 export const updateGlitchStatus = createServerFn({ method: 'POST' })
@@ -21,50 +28,52 @@ export const updateGlitchStatus = createServerFn({ method: 'POST' })
     }
     return { glitchId: data.glitchId, status: data.status as GlitchStatus }
   })
-  .handler(({ data }) => {
-    const guardian = requireGuardian()
+  .handler(async ({ data }) => {
+    const guardian = await requireGuardian()
     if (guardian.role !== 'commander') {
       return { success: false, error: 'Alleen commanders mogen de status wijzigen.' } as const
     }
-    const result = db.update(glitches).set({ status: data.status })
+    const result = await db.update(glitches).set({ status: data.status })
       .where(eq(glitches.glitchId, data.glitchId)).run()
-    if (result.changes === 0) return { success: false, error: 'Deze glitch bestaat niet meer.' } as const
+    if (result.rowsAffected === 0) return { success: false, error: 'Deze glitch bestaat niet meer.' } as const
     return { success: true } as const
   })
 
 export const assignGlitch = createServerFn({ method: 'POST' })
   .validator((input: { glitchId: string; defenderId: string | null }) => input)
-  .handler(({ data }) => {
-    if (requireGuardian().role !== 'commander') return { error: 'Alleen commanders mogen glitches toewijzen.' }
-    return db.transaction((tx) => {
+  .handler(async ({ data }) => {
+    if ((await requireGuardian()).role !== 'commander') return { error: 'Alleen commanders mogen glitches toewijzen.' }
+    return await db.transaction(async (tx) => {
       if (typeof data?.glitchId !== 'string' || (data.defenderId !== null && typeof data.defenderId !== 'string')) {
         return { error: 'Ongeldige toewijzing.' }
       }
       if (data.defenderId !== null) {
-        const defender = tx.select().from(guardians).where(eq(guardians.guardianId, data.defenderId)).get()
+        const defender = await tx.select().from(guardians).where(eq(guardians.guardianId, data.defenderId)).get()
         if (defender?.role !== 'defender') return { error: 'Kies een geldige defender.' }
       }
-      const result = tx.update(glitches).set({ assignedDefenderId: data.defenderId })
+      const result = await tx.update(glitches).set({ assignedDefenderId: data.defenderId })
         .where(eq(glitches.glitchId, data.glitchId)).run()
-      return result.changes ? {} : { error: 'Deze glitch bestaat niet meer.' }
+      return result.rowsAffected ? {} : { error: 'Deze glitch bestaat niet meer.' }
     })
   })
 
 export const addGlitchUpdate = createServerFn({ method: 'POST' })
   .validator((input: { glitchId: string; description: string }) => input)
-  .handler(({ data }) => {
-    const guardian = requireGuardian()
+  .handler(async ({ data }) => {
+    const guardian = await requireGuardian()
     const description = typeof data?.description === 'string' ? data.description.trim() : ''
     if (typeof data?.glitchId !== 'string' || !description || description.length > MAX_ECHO_DESCRIPTION_LENGTH) {
       return { error: 'Vul een geldige beschrijving in.' }
     }
-    return db.transaction((tx) => {
-      const incident = tx.select().from(glitches).where(eq(glitches.glitchId, data.glitchId)).get()
+    const echoId = `EC-${randomUUID()}`
+    const result = await db.transaction(async (tx) => {
+      const incident = await tx.select().from(glitches).where(eq(glitches.glitchId, data.glitchId)).get()
       if (!incident || guardian.role !== 'defender' || incident.assignedDefenderId !== guardian.guardianId) {
         return { error: 'Alleen de toegewezen defender kan hier een update plaatsen.' }
       }
-      tx.insert(echoes).values({ echoId: `EC-${randomUUID()}`, glitchId: incident.glitchId,
+      await tx.insert(echoes).values({ echoId, glitchId: incident.glitchId,
         description, timestamp: new Date().toISOString(), reportingGuardianId: guardian.guardianId }).run()
       return {}
     })
+    return result
   })

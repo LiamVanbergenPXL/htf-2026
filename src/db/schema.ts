@@ -50,3 +50,12 @@ export const sessions = sqliteTable('sessions', {
   guardianId: text('guardian_id').notNull().references(() => guardians.guardianId),
   expiresAt: text('expires_at').notNull(),
 })
+
+export const presence = sqliteTable('world_presence', {
+  guardianId: text('guardian_id').primaryKey().references(() => guardians.guardianId),
+  pose: text('pose', { mode: 'json' }).$type<import('../lib/multiplayer').Pose>().notNull(),
+  seen: text('seen').notNull(),
+  message: text('message').notNull().default(''),
+  messageId: text('message_id'),
+  spoken: text('spoken'),
+})

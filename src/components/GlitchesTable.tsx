@@ -1,3 +1,4 @@
+import { playerUrl } from '#/lib/player-slot'
 import { GlitchAssignment } from '#/components/GlitchAssignment'
 import { useState } from 'react'
 import { GlitchStatusControl } from '#/components/GlitchStatusControl'
@@ -24,7 +25,7 @@ const defaults = { query: '', status: '', from: '', to: '', sort: 'newest' }
 const fieldClass = 'tome-input min-w-0 w-full px-3 py-2 font-sans text-sm font-normal text-fg'
 const normalize = (value: string) => value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
 
-export function GlitchesTable({ glitches, canChangeStatus = false, defenders = [], defenderId }: { glitches: Glitch[]; canChangeStatus?: boolean; defenders?: { id: string; name: string }[]; defenderId?: string }) {
+export function GlitchesTable({ speler, glitches, canChangeStatus = false, defenders = [], defenderId }: { speler?: string; glitches: Glitch[]; canChangeStatus?: boolean; defenders?: { id: string; name: string }[]; defenderId?: string }) {
   const [filters, setFilters] = useState(defaults)
   const update = (key: keyof typeof defaults, value: string) =>
     setFilters((current) => ({ ...current, [key]: value }))
@@ -105,10 +106,10 @@ export function GlitchesTable({ glitches, canChangeStatus = false, defenders = [
                   {glitch.imageEchoIds?.length ? (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {glitch.imageEchoIds.map((echoId, index) => (
-                        <a key={echoId} href={`/echo-images/${encodeURIComponent(echoId)}`} target="_blank" rel="noopener noreferrer"
+                        <a key={echoId} href={playerUrl(`/echo-images/${encodeURIComponent(echoId)}`, speler)} target="_blank" rel="noopener noreferrer"
                           aria-label={`Bekijk afbeelding ${index + 1} bij ${glitch.glitchId} in een nieuw tabblad`}
                           className="block border-4 border-[#fffaf0] shadow-md shadow-[#3c1e0a]/40 transition hover:-rotate-1 focus-visible:outline-2 focus-visible:outline-gilt">
-                          <img src={`/echo-images/${encodeURIComponent(echoId)}`} alt={`Afbeelding ${index + 1} bij de echo`}
+                          <img src={playerUrl(`/echo-images/${encodeURIComponent(echoId)}`, speler)} alt={`Afbeelding ${index + 1} bij de echo`}
                             loading="lazy" className="h-20 w-28 object-cover sepia-[.25]" />
                         </a>
                       ))}

@@ -7,15 +7,15 @@ const accounts = [
   { guardianId: 'guardian-commander', codename: 'commander', role: 'commander', password: 'Commander2026!' },
 ] as const
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' || process.env.TURSO_DATABASE_URL) {
   throw new Error('Testaccounts mogen niet in productie worden aangemaakt.')
 }
 
 // Re-running this seed preserves existing accounts, passwords and application data.
-db.transaction((tx) => {
+await db.transaction(async (tx) => {
   for (const { password, ...guardian } of accounts) {
-    tx.insert(guardians).values(guardian).onConflictDoNothing().run()
-    tx.insert(guardianCredentials).values({
+    await tx.insert(guardians).values(guardian).onConflictDoNothing().run()
+    await tx.insert(guardianCredentials).values({
       guardianId: guardian.guardianId,
       passwordHash: hashPassword(password),
     }).onConflictDoNothing().run()

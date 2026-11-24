@@ -192,3 +192,34 @@ Guardians hebben een role.
 - **Verstuur notificaties:** Push-notificaties, e-mails of sms-berichten bij kritieke problemen (met instelbare voorkeuren per user).
 - **Leaderboard:** Een klassement met badges voor de defenders die de meeste incidenten fixen.
 
+
+## Mobiel meespelen en naar Vercel deployen
+
+De QR-code linksonder opent `/play`. Elke bezoeker kan met **Speel mee als gast** een eigen reiziger starten. Het wachtwoordformulier is voor bestaande Guardian-accounts. Op een telefoon kun je een gebouw aantikken of met de ronde bediening lopen. Lokaal moeten beide apparaten hetzelfde netwerk gebruiken. Start daarvoor `npm run dev` en open op de computer bij voorkeur het **Network**-adres van Vite. Zo bevat de QR-code het juiste adres, ook bij meerdere netwerkadapters.
+
+### Productie
+
+1. Gebruik Node.js 24 vanuit de projectmap. Voer `npm ci`, `npx vercel login` en `npx vercel link` uit. Kies of maak je Vercel-project. Gebruik de projectroot, Node.js 24.x, het buildcommando `npm run build` en laat de outputdirectory automatisch bepalen.
+2. Koppel een nieuwe Turso-database aan het project via de [Vercel Marketplace](https://vercel.com/marketplace/tursocloud/database). Controleer bij **Settings → Environment Variables** of `TURSO_DATABASE_URL` en `TURSO_AUTH_TOKEN` voor **Production** beschikbaar zijn. Gebruik de database-URL en een token met schrijfrechten. Laat deze waarden op de server.
+3. Haal de productieconfiguratie op en maak de tabellen aan in de nieuwe database. Controleer eerst dat beide variabelen aanwezig zijn. Voer in de projectmap uit:
+
+   ```sh
+   npx vercel env pull .env.vercel.local --environment=production
+   node --env-file=.env.vercel.local -e "if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) throw Error('Turso-configuratie ontbreekt')"
+   node --env-file=.env.vercel.local node_modules/drizzle-kit/bin.cjs push
+   ```
+
+   Gebruik voor een bestaande database eerst een back-up en controleer de voorgestelde schemawijzigingen. De lokale demoseed is uitsluitend voor ontwikkeling.
+4. Voor gastspel is het schema voldoende. Voor een eigen commander kun je in zsh een wachtwoord van minstens twaalf tekens invoeren. De invoer blijft verborgen:
+
+   ```sh
+   read -rs 'GUARDIAN_PASSWORD?Nieuw Guardian-wachtwoord: '
+   export GUARDIAN_PASSWORD
+   node --env-file=.env.vercel.local src/db/create-guardian.ts mijn-codenaam commander
+   unset GUARDIAN_PASSWORD
+   ```
+
+5. Voer `npx vercel --prod` uit. Open het productiedomein en scan daar de QR-code, of deel `https://jouw-project.vercel.app/play`. Controleer de productie-URL ook in een privévenster. Als Deployment Protection om een Vercel-login vraagt, pas de bescherming van het **productiedomein** aan voor publiek spel.
+6. Auri gebruikt een afzonderlijke, vanuit Vercel bereikbare AI-server. Stel daarvoor `OLLAMA_BASE_URL` en `AURI_MODEL` in. De kaart, gasttoegang, chat en Zegeltocht werken onafhankelijk van Auri.
+
+Sessies, echo's en multiplayerposities gebruiken dezelfde Turso-database op alle instanties. De browser genereert de QR-code op het gebruikte domein. Een nieuwe deployment op hetzelfde productiedomein behoudt daardoor dezelfde QR-link.

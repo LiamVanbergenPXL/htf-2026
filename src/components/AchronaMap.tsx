@@ -1,4 +1,5 @@
-import { Flame, Footprints, Gem, Scan, Swords, Users, X, Check } from 'lucide-react'
+import { useWorldPlayers } from './useWorldPlayers'
+import { MessageCircle, Flame, Footprints, Gem, Scan, Swords, Users, X, Check } from 'lucide-react'
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { ACHRONA_BUILDINGS, type BuildingId } from '#/lib/achrona-map'
 import { drawAchrona, onIsland, PLAZA, SPAWN, type MapPoint } from '#/lib/achrona-scene'
@@ -15,7 +16,8 @@ const directions: Record<string, [number, number]> = {
 const door = ({ x, y }: MapPoint): MapPoint => ({ x, y: y + 2 })
 const at = ({ x, y }: MapPoint) => ({ left: `${x}%`, top: `${y}%` })
 
-export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
+export function AchronaMap({ role, glitches, level, paused, onVisit, integrityHud }: {
+  role: 'commander' | 'defender'
   glitches: Glitch[]
   level: RealmLevel
   paused: boolean
@@ -55,10 +57,15 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
   const objective = useRef(0)
   const running = useRef(false)
   const reducedMotion = useRef(false)
-  const position = useRef(SPAWN)
+  const spawn = role === 'commander' ? { x: SPAWN.x - 6, y: SPAWN.y + 1 } : SPAWN
+  const position = useRef(spawn)
+  const [chat, setChat] = useState(false)
+  const [draft, setDraft] = useState('')
+  const multiplayer = useWorldPlayers(() => ({ ...position.current, angle: heading.current, character }), paused || choosing)
+  const heraldStart = useRef({ id: '', time: 0 })
   const keys = useRef(new Set<string>())
   const trip = useRef<{ id: BuildingId | null; stops: MapPoint[] } | null>(null)
-  const [player, setPlayer] = useState(SPAWN)
+  const [player, setPlayer] = useState(spawn)
   const [destination, setDestination] = useState<BuildingId | null>(null)
   const [facingLeft, setFacingLeft] = useState(false)
   const [walking, setWalking] = useState(false)
@@ -161,16 +168,21 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
     if (!realm.current || now - lastDraw.current < 32) return
     lastDraw.current = now
     const active = new Set(glitches.filter(g => g.status !== 'FIXED' && g.buildingId).map(g => g.buildingId!))
+    if (multiplayer.herald && heraldStart.current.id !== multiplayer.herald.id) {
+      heraldStart.current = { id: multiplayer.herald.id, time: now }
+    }
     realm.current.frame(position.current, character, heading.current, moving, closeCamera, now / 1000,
       running.current ? seals[objective.current] : null, running.current ? riftPosition(clock.current) : null,
-      active, reducedMotion.current)
+      active, reducedMotion.current, multiplayer.others,
+      multiplayer.herald ? (now - heraldStart.current.time) / 1000 : null)
     const anchors = markers.current?.querySelectorAll<HTMLElement>('[data-anchor]')
     anchors?.forEach(node => {
       const key = node.dataset.anchor
-      const point = key === 'seal' ? seals[Math.min(objective.current, seals.length - 1)] :
-        ACHRONA_BUILDINGS.find(b => b.id === key)
+      const peer = key?.startsWith('peer-') ? multiplayer.others.find(p => 'peer-' + p.guardianId === key) : undefined
+      const point = peer ?? (key === 'self' ? position.current : key === 'herald' ? { x: 46, y: 76 } : key === 'seal' ? seals[Math.min(objective.current, seals.length - 1)] :
+        ACHRONA_BUILDINGS.find(b => b.id === key))
       if (!point) return
-      const projected = realm.current!.project(point)
+      const projected = realm.current!.project(point, peer || key === 'self' ? 6.2 : key === 'herald' ? 5.4 : 0)
       node.style.left = projected.x + '%'
       node.style.top = projected.y + '%'
     })
@@ -283,6 +295,21 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
       </header>
       <div className="world-hud">{integrityHud}</div>
       <div className="world-locations" ref={markers}>
+        {multiplayer.others.map(peer => (
+          <div key={peer.guardianId} data-anchor={'peer-' + peer.guardianId} className="realm-peer" style={at(peer)}>
+            {peer.message && <span className="realm-speech">{peer.message}</span>}
+            <span className="realm-name">{peer.codename} · {peer.role}</span>
+            {!threeD && <img src={`/images/achrona/${peer.character}.webp`} alt="" />}
+          </div>
+        ))}
+        {multiplayer.self?.message && <div className="realm-peer own-speech" data-anchor="self" style={at(player)}>
+          <span className="realm-speech">{multiplayer.self.message}</span>
+        </div>}
+        {multiplayer.herald && <div key={multiplayer.herald.id} className="realm-peer herald-banner" data-anchor="herald" role="status" style={at({ x:46, y:76 })}>
+          <span className="realm-speech">Nieuwe echo van {multiplayer.herald.author}!</span>
+          {!threeD && <span className="herald-sprite"><img src="/images/achrona/scout.webp" alt="Heraut" />🎺</span>}
+        </div>}
+
         {ACHRONA_BUILDINGS.map((building) => {
           const { id, name } = building
           const active = glitches.filter(({ buildingId, status }) => buildingId === id && status !== 'FIXED').length
@@ -337,6 +364,21 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
           </div>
         </div>
       </dialog>
+      <div className="realm-chat">
+        <button type="button" aria-expanded={chat} onClick={() => setChat(!chat)}>
+          <MessageCircle size={17} /> Chat · {multiplayer.online ? multiplayer.others.length + 1 : '…'}
+        </button>
+        {chat && <form onSubmit={event => {
+          event.preventDefault()
+          if (multiplayer.speak(draft)) setDraft('')
+        }}>
+          <label htmlFor="realm-message">Bericht boven je personage</label>
+          <input id="realm-message" autoFocus maxLength={160} value={draft} onChange={e => setDraft(e.target.value)}
+            placeholder="Zeg iets tegen de andere spelers…" />
+          <button disabled={!draft.trim() || multiplayer.sending || !multiplayer.online}>Verstuur</button>
+          {!multiplayer.online && <small>Verbinding herstellen…</small>}
+        </form>}
+      </div>
       <aside className="quest-panel" aria-label="Zegeltocht">
         <div className="quest-heading"><Swords size={18} /><h2>Zegeltocht</h2></div>
         {quest === 'playing' ? <>
@@ -352,6 +394,22 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
       </aside>
       {threeD && <button type="button" className="world-camera" aria-pressed={closeCamera}
         onClick={() => setCloseCamera(!closeCamera)}><Scan size={16} />{closeCamera ? 'Hele kaart' : 'Volg speler'}</button>}
+      <button type="button" className="touch-walk" aria-label="Sleep om te lopen"
+        onPointerDown={event => {
+          event.currentTarget.setPointerCapture(event.pointerId)
+          trip.current = null
+          setDestination(null)
+        }}
+        onPointerMove={event => {
+          if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+          const rect = event.currentTarget.getBoundingClientRect()
+          const dx = event.clientX - rect.left - rect.width / 2
+          const dy = event.clientY - rect.top - rect.height / 2
+          keys.current.clear()
+          if (Math.abs(dx) > 7) keys.current.add(dx < 0 ? 'a' : 'd')
+          if (Math.abs(dy) > 7) keys.current.add(dy < 0 ? 'w' : 's')
+        }}
+        onLostPointerCapture={() => keys.current.clear()}>✥</button>
       <footer className="world-controls">
         <div><Footprints size={18} aria-hidden="true" /> <span>Klik/tik op een gebouw of loop met <kbd>WASD</kbd> / <kbd>↑↓←→</kbd>. <kbd>Shift</kbd> sprint · <kbd>E</kbd> betreed gebouw.</span></div>
         <div><Flame size={16} aria-hidden="true" /> <span>Actieve glitch{unlocated > 0 ? ` · ${unlocated} zonder locatie in de Echopost` : ''}</span></div>

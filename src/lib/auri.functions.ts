@@ -25,12 +25,14 @@ export const askAuri = createServerFn({ method: 'POST' })
     return { question: data.question.trim(), history }
   })
   .handler(async ({ data }) => {
-    requireGuardian()
+    if ((await requireGuardian()).guardianId.startsWith('guest-')) {
+      return { success: false, error: 'Het incidentenarchief van Auri is alleen voor aangemelde Guardians.' } as const
+    }
     try {
       // Load a consistent fresh snapshot, including only incident data, never credentials.
-      const incidents = db.transaction((tx) => {
-        const rows = tx.select().from(glitches).orderBy(desc(glitches.timestamp)).all()
-        const reports = tx.select({
+      const incidents = await db.transaction(async (tx) => {
+        const rows = await tx.select().from(glitches).orderBy(desc(glitches.timestamp)).all()
+        const reports = await tx.select({
           glitchId: echoes.glitchId, description: echoes.description, timestamp: echoes.timestamp,
           codename: guardians.codename, imageId: echoImages.echoId,
         }).from(echoes).innerJoin(guardians, eq(guardians.guardianId, echoes.reportingGuardianId))

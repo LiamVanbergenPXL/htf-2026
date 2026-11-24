@@ -11,7 +11,10 @@ import { getCurrentGuardianFn } from '#/lib/auth.functions'
 
 import appCss from '../styles.css?url'
 
+import { playerSlot } from '#/lib/player-slot'
+
 export const Route = createRootRoute({
+  validateSearch: (search): { speler?: string } => ({ speler: playerSlot(search.speler) }),
   beforeLoad: async () => ({ guardian: await getCurrentGuardianFn() }),
   headers: () => ({ 'Cache-Control': 'private, no-store' }),
   head: () => ({

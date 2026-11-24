@@ -1,5 +1,7 @@
-import {Link} from '@tanstack/react-router'
-import {LogOut, PanelLeftClose, PanelLeftOpen, ScrollText, Shield, type LucideIcon} from 'lucide-react'
+import { newPlayerId } from '#/lib/player-slot'
+import { playerUrl } from '#/lib/player-slot'
+import {Link, useSearch} from '@tanstack/react-router'
+import {Users, LogOut, PanelLeftClose, PanelLeftOpen, ScrollText, Shield, type LucideIcon} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { D20 } from '#/components/ui/D20'
 import { logoutFn } from '#/lib/auth.functions'
@@ -23,6 +25,7 @@ const itemBase =
 const activeClass = 'bg-gilt/20 text-[#f3e2bc] ring-1 ring-gilt/60'
 
 export function Sidebar({ guardian }: { guardian: { codename: string; role: 'defender' | 'commander' } }) {
+  const { speler } = useSearch({ from: '__root__' })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useExpandedPreference()
@@ -32,7 +35,7 @@ export function Sidebar({ guardian }: { guardian: { codename: string; role: 'def
     setError('')
     try {
       await logoutFn()
-      window.location.replace('/login')
+      window.location.replace(playerUrl('/login', speler))
     } catch {
       setError('Uitloggen mislukt. Probeer opnieuw.')
       setPending(false)
@@ -60,7 +63,7 @@ export function Sidebar({ guardian }: { guardian: { codename: string; role: 'def
           )
           const labelProps = expanded ? {} : { 'aria-label': label, title: label }
           return to ? (
-            <Link key={label} to={to} {...labelProps} className={itemClass}
+            <Link key={label} to={to} search={{ speler }} {...labelProps} className={itemClass}
               activeOptions={{ exact: true }} activeProps={{ className: activeClass }}>
               {content}
             </Link>
@@ -85,6 +88,10 @@ export function Sidebar({ guardian }: { guardian: { codename: string; role: 'def
             </div>
           ) : <span className="sr-only">Ingelogd als {guardian.codename} ({guardian.role})</span>}
         </div>
+        <button type="button" aria-label="Tweede speler openen" title="Tweede speler openen" className={itemClass}
+          onClick={() => window.open(playerUrl('/login', newPlayerId()), '_blank', 'noopener')}>
+          <Users className="size-5 shrink-0" />{expanded && <span>Tweede speler</span>}
+        </button>
         <button type="button" onClick={logout} disabled={pending} aria-label="Uitloggen" title="Uitloggen"
           className={`${itemClass} disabled:opacity-50`}>
           <LogOut className="size-5 shrink-0" aria-hidden="true" />

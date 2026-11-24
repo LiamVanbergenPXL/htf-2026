@@ -1,3 +1,5 @@
+import { JoinCode } from '#/components/JoinCode'
+import { playerUrl } from '#/lib/player-slot'
 import {createFileRoute, redirect} from '@tanstack/react-router'
 import {GlitchesTable} from '#/components/GlitchesTable.tsx'
 import {getGlitches} from '#/lib/glitches.functions.ts'
@@ -11,14 +13,15 @@ import {AchronaMap} from '#/components/AchronaMap'
 import {ACHRONA_BUILDINGS, type BuildingId} from '#/lib/achrona-map'
 
 export const Route = createFileRoute('/')({
-  beforeLoad: ({ context }) => {
-    if (!context.guardian) throw redirect({ to: '/login' })
+  beforeLoad: ({ context, search }) => {
+    if (!context.guardian) throw redirect({ to: '/login', search })
   },
   loader: () => getGlitches(),
   component: OverviewPage,
 })
 
 function OverviewPage() {
+  const { speler } = Route.useSearch()
   const { glitches, defenders } = Route.useLoaderData()
   const { guardian } = Route.useRouteContext()
   const { level } = calculateRealmIntegrity(glitches)
@@ -69,7 +72,8 @@ function OverviewPage() {
 
   return (
     <>
-      <AchronaMap glitches={glitches} level={level} paused={building !== null} onVisit={visitBuilding}
+      <JoinCode />
+      <AchronaMap role={guardian?.role ?? 'defender'} glitches={glitches} level={level} paused={building !== null} onVisit={visitBuilding}
         integrityHud={
           <div className="world-hud-stack">
             <RealmIntegrityMeter glitches={glitches} />
@@ -107,10 +111,10 @@ function OverviewPage() {
             )}
             {guardian && <ReportEchoForm role={guardian.role} onGlitch={openGlitch} room={building === 'gate' || building === 'oracle' ? building : null} />}
             <section hidden={building !== 'archive'} className="stat-block p-6">
-              <a href="/reports/achrona.pdf" download className="tome-button inline-block px-4 py-2">Rapport opslaan als PDF</a>
+              {guardian?.guardianId.startsWith('guest-') ? <p>Raadsrapporten zijn toegankelijk voor aangemelde Guardians.</p> : <a href={playerUrl('/reports/achrona.pdf', speler)} download className="tome-button inline-block px-4 py-2">Rapport opslaan als PDF</a>}
             </section>
             <div hidden={building !== 'post'}>
-              <GlitchesTable key={glitchLink?.version} defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined}
+              <GlitchesTable speler={speler} key={glitchLink?.version} defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined}
                 glitches={glitches} canChangeStatus={guardian?.role === 'commander'} />
             </div>
           </div>
