@@ -14,5 +14,8 @@ export type Glitch = {
   description: string
   /** ISO 8601 */
   timestamp: string
+  assignedDefenderId?: string | null
+  assignedDefender?: string | null
+  updates?: { id: string; author: string; text: string; timestamp: string }[]
   imageEchoIds?: string[]
 }

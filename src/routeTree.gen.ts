@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EchoImagesEchoIdRouteImport } from './routes/echo-images.$echoId'
+import { Route as ReportsAchronaDotpdfRouteImport } from './routes/reports.achrona[.]pdf'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,49 @@ const EchoImagesEchoIdRoute = EchoImagesEchoIdRouteImport.update({
   path: '/echo-images/$echoId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsAchronaDotpdfRoute = ReportsAchronaDotpdfRouteImport.update({
+  id: '/reports/achrona.pdf',
+  path: '/reports/achrona.pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/echo-images/$echoId': typeof EchoImagesEchoIdRoute
+  '/reports/achrona.pdf': typeof ReportsAchronaDotpdfRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/echo-images/$echoId': typeof EchoImagesEchoIdRoute
+  '/reports/achrona.pdf': typeof ReportsAchronaDotpdfRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/echo-images/$echoId': typeof EchoImagesEchoIdRoute
+  '/reports/achrona.pdf': typeof ReportsAchronaDotpdfRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/echo-images/$echoId'
+  fullPaths: '/' | '/login' | '/echo-images/$echoId' | '/reports/achrona.pdf'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/echo-images/$echoId'
-  id: '__root__' | '/' | '/login' | '/echo-images/$echoId'
+  to: '/' | '/login' | '/echo-images/$echoId' | '/reports/achrona.pdf'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/echo-images/$echoId'
+    | '/reports/achrona.pdf'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   EchoImagesEchoIdRoute: typeof EchoImagesEchoIdRoute
+  ReportsAchronaDotpdfRoute: typeof ReportsAchronaDotpdfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +97,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EchoImagesEchoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/achrona.pdf': {
+      id: '/reports/achrona.pdf'
+      path: '/reports/achrona.pdf'
+      fullPath: '/reports/achrona.pdf'
+      preLoaderRoute: typeof ReportsAchronaDotpdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +111,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   EchoImagesEchoIdRoute: EchoImagesEchoIdRoute,
+  ReportsAchronaDotpdfRoute: ReportsAchronaDotpdfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

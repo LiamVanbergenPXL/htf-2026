@@ -266,6 +266,32 @@ test('echo reporting and commander permissions through real HTTP server function
       }
     })
 
+    await t.test('commander assigns a defender who can add an echo to the existing glitch', async () => {
+      const assignment = { glitchId, defenderId: 'guardian-defender' }
+      const update = { glitchId, description: 'De wacht houdt de poort in het oog.' }
+      const before = count('glitches')
+      assert.match((await rpc('addGlitchUpdate', update, defender)).body, /toegewezen defender/)
+      assert.match((await rpc('assignGlitch', assignment, defender)).body, /Alleen commanders/)
+      assert.match((await rpc('assignGlitch', { ...assignment, defenderId: 'guardian-commander' }, commander)).body, /geldige defender/)
+      assert.equal((await rpc('assignGlitch', assignment, commander)).response.status, 200)
+      assert.match((await rpc('addGlitchUpdate', update, commander)).body, /toegewezen defender/)
+      assert.equal((await rpc('addGlitchUpdate', update, defender)).response.status, 200)
+      assert.equal(count('glitches'), before)
+      const list = await rpc('getGlitches', undefined, defender)
+      assert.match(list.body, /De wacht houdt de poort in het oog/)
+      const page = await (await fetch(base, { headers: { cookie: defender } })).text()
+      assert.match(page, /href="\/reports\/achrona.pdf"/)
+      assert.equal((await fetch(`${base}/reports/achrona.pdf`)).status, 401)
+      const pdf = await fetch(`${base}/reports/achrona.pdf`, { headers: { cookie: defender } })
+      assert.equal(pdf.status, 200)
+      assert.equal(pdf.headers.get('content-type'), 'application/pdf')
+      assert.match(pdf.headers.get('content-disposition'), /^attachment/)
+      assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString(), '%PDF-')
+      assert.match(page, /De wacht houdt de poort in het oog/)
+      await rpc('assignGlitch', { ...assignment, defenderId: null }, commander)
+      assert.match((await rpc('addGlitchUpdate', update, defender)).body, /toegewezen defender/)
+    })
+
     await t.test('demo seed can reset linked echoes, images and glitches without removing accounts', () => {
       execFileSync(process.execPath, ['src/db/seed.ts'], { env, stdio: 'pipe' })
       assert.equal(count('echoes'), 0)

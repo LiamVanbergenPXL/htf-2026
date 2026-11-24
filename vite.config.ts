@@ -27,7 +27,7 @@ const config = defineConfig(({ mode }) => {
       devtools(),
       nitro({
         rollupConfig: {
-          external: [/^@sentry\//],
+          external: [/^@sentry\//, 'pdfkit'],
           // Overrides nitro's own onwarn, so its default ignore list is repeated here.
           // MODULE_LEVEL_DIRECTIVE: "use client" in @tanstack/react-router is irrelevant
           // in the server bundle (no React Server Components), so the warning is noise.

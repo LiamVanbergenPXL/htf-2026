@@ -12,14 +12,17 @@ export const Route = createFileRoute('/')({
 })
 
 function OverviewPage() {
-  const glitches = Route.useLoaderData()
+  const { glitches, defenders } = Route.useLoaderData()
   const { guardian } = Route.useRouteContext()
 
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-semibold text-fg">Overview</h1>
       {guardian ? <ReportEchoForm role={guardian.role} /> : null}
-      <GlitchesTable glitches={glitches} canChangeStatus={guardian?.role === 'commander'} />
+      <a href="/reports/achrona.pdf" download className="self-start rounded bg-accent px-4 py-2 text-white">
+        Rapport opslaan als PDF
+      </a>
+      <GlitchesTable defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined} glitches={glitches} canChangeStatus={guardian?.role === 'commander'} />
     </div>
   )
 }
