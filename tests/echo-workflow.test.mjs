@@ -48,7 +48,7 @@ test('echo reporting and commander permissions through real HTTP server function
     }
     assert.ok(ready, logs)
     const endpoints = {}
-    for (const file of ['auth', 'echoes', 'glitches', 'auri']) {
+    for (const file of ['auth', 'echoes', 'glitches', 'auri', 'simulator']) {
       const source = await (await fetch(`${base}/src/lib/${file}.functions.ts`)).text()
       for (const match of source.matchAll(/export const (\w+) = [^\n]*createClientRpc\("([^"]+)"/g)) {
         endpoints[match[1]] = `${base}/_serverFn/${match[2]}`
@@ -299,6 +299,31 @@ test('echo reporting and commander permissions through real HTTP server function
       assert.match(page, /De wacht houdt de poort in het oog/)
       await rpc('assignGlitch', { ...assignment, defenderId: null }, commander)
       assert.match((await rpc('addGlitchUpdate', update, defender)).body, /toegewezen defender/)
+    })
+
+    await t.test('Desync simulator is commander-only and never touches real glitches', async () => {
+      // noinspection SqlNoDataSourceInspection
+      const simRows = () => sqlite.prepare("SELECT glitch_id, status, building_id FROM glitches WHERE glitch_id LIKE 'SIM-%' ORDER BY timestamp").all()
+      const realBefore = count('glitches')
+      for (const name of ['simulateGlitch', 'resyncSimulatedGlitch', 'clearSimulation']) {
+        assert.match((await rpc(name, undefined, defender)).body, /Alleen commanders/)
+        assert.match((await rpc(name, undefined)).body, /login/)
+      }
+      assert.equal(simRows().length, 0)
+
+      for (let i = 0; i < 2; i++) assert.equal((await rpc('simulateGlitch', undefined, commander)).response.status, 200)
+      assert.deepEqual(simRows().map((row) => row.status), ['LEAKED', 'LEAKED'])
+      assert.ok(simRows().every((row) => /^SIM-[0-9A-F]{8}$/.test(row.glitch_id)))
+      // Each simulated glitch lands in a building so it shows up on the Achrona map.
+      assert.ok(simRows().every((row) => ['gate', 'post', 'archive', 'oracle'].includes(row.building_id)), JSON.stringify(simRows()))
+
+      const resync = await rpc('resyncSimulatedGlitch', undefined, commander)
+      assert.match(resync.body, /"remaining"/)
+      assert.deepEqual(simRows().map((row) => row.status), ['FIXED', 'LEAKED'])
+
+      await rpc('clearSimulation', undefined, commander)
+      assert.equal(simRows().length, 0)
+      assert.equal(count('glitches'), realBefore)
     })
 
     await t.test('demo seed can reset linked echoes, images and glitches without removing accounts', () => {

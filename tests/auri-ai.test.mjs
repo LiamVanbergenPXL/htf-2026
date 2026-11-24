@@ -39,6 +39,14 @@ test('snapshot has exact global counts, echo context and no invented severity', 
   assert.equal(snapshot.truncated, false)
 })
 
+test('Desync simulator glitches are flagged as drills, with their own count', () => {
+  const drill = { glitchId: 'SIM-1A2B3C4D', status: 'LEAKED', description: 'Runen herschrijven zichzelf', timestamp: '2026-11-24T09:30:00Z', echoes: [] }
+  const snapshot = buildIncidentSnapshot([...incidents, drill], 'Wat is er aan de hand?', [], checkedAt)
+  assert.equal(snapshot.simulated, 1)
+  assert.equal(snapshot.incidents.find((row) => row.glitchId === 'SIM-1A2B3C4D').simulated, true)
+  assert.equal(snapshot.incidents.find((row) => row.glitchId === 'GL-0001').simulated, false)
+})
+
 test('large context is bounded but preserves full counts and prioritizes a requested old ID', () => {
   const many = Array.from({ length: 80 }, (_, i) => ({ ...incidents[0], glitchId: `GL-${i + 1000}`, description: 'x'.repeat(2000), echoes: [] }))
   const snapshot = buildIncidentSnapshot(many, 'Vertel over GL-1079', [], checkedAt)

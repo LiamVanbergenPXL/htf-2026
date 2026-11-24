@@ -3,6 +3,7 @@ import {GlitchesTable} from '#/components/GlitchesTable.tsx'
 import {getGlitches} from '#/lib/glitches.functions.ts'
 import {ReportEchoForm} from '#/components/ReportEchoForm'
 import {RealmIntegrityMeter} from '#/components/RealmIntegrityMeter'
+import {DesyncSimulator} from '#/components/DesyncSimulator'
 import {calculateRealmIntegrity, type RealmLevel} from '#/lib/realm-integrity'
 import {useEffect, useRef, useState} from 'react'
 import {X} from 'lucide-react'
@@ -69,7 +70,12 @@ function OverviewPage() {
   return (
     <>
       <AchronaMap glitches={glitches} level={level} paused={building !== null} onVisit={visitBuilding}
-        integrityHud={<RealmIntegrityMeter glitches={glitches} />} />
+        integrityHud={
+          <div className="world-hud-stack">
+            <RealmIntegrityMeter glitches={glitches} />
+            {guardian?.role === 'commander' ? <DesyncSimulator glitches={glitches} /> : null}
+          </div>
+        } />
       <dialog ref={dialog} className="world-dialog" aria-labelledby="world-room-title"
         onCancel={(event) => { event.preventDefault(); setBuilding(null) }}
         onClick={(event) => { if (event.target === event.currentTarget) setBuilding(null) }}>

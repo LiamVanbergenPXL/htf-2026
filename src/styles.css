@@ -620,3 +620,29 @@ html[data-realm="DESYNC"] .fire-layer { transform-box: fill-box; transform-origi
   .character-roster strong { align-self: end; }
   .character-roster small { align-self: start; }
 }
+
+/* Desync simulator: a commander-only panel under the integrity HUD on the map. */
+.world-hud-stack { display: flex; flex-direction: column; align-items: stretch; gap: .5rem; }
+.hud-sim { flex-direction: column; align-items: stretch; gap: .4rem; max-width: 17rem; }
+.hud-sim h2 { font: 700 .84rem var(--font-sc); color: #e3c58c; }
+.hud-sim-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
+.hud-sim-button {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .3rem .55rem;
+  font: 700 .8rem var(--font-sc);
+  color: #fff0cf;
+  background: #ffffff14;
+  border: 1px solid var(--world-line);
+  border-radius: .4rem;
+  transition: background .15s;
+}
+.hud-sim-button svg { width: .95rem; height: .95rem; }
+.hud-sim-button[data-primary] { background: #8a2414; border-color: #c9962b99; }
+.hud-sim-button:hover:not(:disabled) { background: #ffffff26; }
+.hud-sim-button[data-primary]:hover:not(:disabled) { background: #a32c18; }
+.hud-sim-button:disabled { opacity: .4; cursor: not-allowed; }
+.hud-sim-note { font-size: .75rem; color: #decfb3; }
+.hud-sim-note:empty { display: none; }
+.hud-sim-error { font-size: .75rem; font-weight: 700; color: #ffb4a2; }
