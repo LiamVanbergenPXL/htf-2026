@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "generate-routes": "vite build",
-    "build": "vite build",
+    "build": "vite build && node scripts/package-vercel-pdf.mjs",
     "preview": "vite preview",
     "test:workflow": "node --test tests/echo-workflow.test.mjs",
     "test:speech": "node --test tests/echo-speech.test.mjs",

@@ -1,0 +1,7 @@
+.env*
+local.db*
+*.sqlite*
+.idea/
+.output/
+.tanstack/
+node_modules/
