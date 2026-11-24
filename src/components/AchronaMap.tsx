@@ -1,7 +1,8 @@
-import { Flame, Footprints, Gem, Scan, Swords } from 'lucide-react'
+import { Flame, Footprints, Gem, Scan, Swords, Users, X, Check } from 'lucide-react'
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { ACHRONA_BUILDINGS, type BuildingId } from '#/lib/achrona-map'
 import { drawAchrona, onIsland, PLAZA, SPAWN, type MapPoint } from '#/lib/achrona-scene'
+import { characters, type CharacterId } from '#/lib/achrona-characters'
 import { seals, riftPosition, travelDistance } from '#/lib/achrona-adventure'
 import type { createRealm } from '#/lib/achrona-3d'
 import type { Glitch } from '#/lib/glitch'
@@ -27,6 +28,22 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
   const realm = useRef<ReturnType<typeof createRealm> | null>(null)
   const [threeD, setThreeD] = useState(false)
   const [closeCamera, setCloseCamera] = useState(false)
+  const chooser = useRef<HTMLDialogElement>(null)
+  const [choosing, setChoosing] = useState(false)
+  const [character, setCharacter] = useState<CharacterId>('scout')
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('achrona-player-character')
+      const choice = characters.find(({ id }) => id === saved)
+      if (choice) setCharacter(choice.id)
+    } catch { /* Storage is optional. */ }
+  }, [])
+  function chooseCharacter(id: CharacterId) {
+    setCharacter(id)
+    setCloseCamera(true)
+    try { localStorage.setItem('achrona-player-character', id) } catch { /* Keep this session's choice. */ }
+    chooser.current?.close()
+  }
   const heading = useRef(0)
   const lastDraw = useRef(0)
   const [quest, setQuest] = useState<'ready' | 'playing' | 'won'>('ready')
@@ -144,7 +161,7 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
     if (!realm.current || now - lastDraw.current < 32) return
     lastDraw.current = now
     const active = new Set(glitches.filter(g => g.status !== 'FIXED' && g.buildingId).map(g => g.buildingId!))
-    realm.current.frame(position.current, heading.current, moving, closeCamera, now / 1000,
+    realm.current.frame(position.current, character, heading.current, moving, closeCamera, now / 1000,
       running.current ? seals[objective.current] : null, running.current ? riftPosition(clock.current) : null,
       active, reducedMotion.current)
     const anchors = markers.current?.querySelectorAll<HTMLElement>('[data-anchor]')
@@ -169,7 +186,7 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
   })
 
   useEffect(() => {
-    if (paused) return
+    if (paused || choosing) return
     const held = keys.current
     let frame: number
     let previous = performance.now()
@@ -243,7 +260,7 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
       window.removeEventListener('keyup', keyUp)
       window.removeEventListener('blur', clearKeys)
     }
-  }, [paused])
+  }, [paused, choosing])
 
   function walkTo(building: typeof ACHRONA_BUILDINGS[number]) {
     keys.current.clear()
@@ -292,9 +309,34 @@ export function AchronaMap({ glitches, level, paused, onVisit, integrityHud }: {
         <div className="world-player" data-walking={walking && !paused || undefined} data-left={facingLeft || undefined}
           style={{ ...at(player), zIndex: Math.round(player.y) + 1 }} aria-hidden="true">
           <span className="world-player-shadow" />
-          <img src="/images/achrona/scout.webp" alt="" />
+          <img src={`/images/achrona/${character}.webp`} alt="" />
         </div>
       </div>
+      <button className="world-character-button" type="button" aria-haspopup="dialog" onClick={() => {
+        if (chooser.current && !chooser.current.open) {
+          chooser.current.showModal()
+          setChoosing(true)
+        }
+      }}><Users size={17} /> Kies personage</button>
+      <dialog ref={chooser} className="character-picker" aria-labelledby="character-title"
+        onClose={() => setChoosing(false)} onClick={event => {
+          if (event.target === event.currentTarget) chooser.current?.close()
+        }}>
+        <div className="character-interior">
+          <header><h2 id="character-title">Kies je personage</h2>
+            <button type="button" aria-label="Sluiten" onClick={() => chooser.current?.close()}><X /></button>
+          </header>
+          <div className="character-roster">
+            {characters.map(({ id, name, equipment }) => (
+              <button type="button" key={id} aria-pressed={id === character} onClick={() => chooseCharacter(id)}>
+                <img src={`/images/achrona/${id}.webp`} alt="" />
+                <strong>{name}{character === id && <Check aria-hidden="true" size={16} />}</strong>
+                <small>{equipment}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+      </dialog>
       <aside className="quest-panel" aria-label="Zegeltocht">
         <div className="quest-heading"><Swords size={18} /><h2>Zegeltocht</h2></div>
         {quest === 'playing' ? <>

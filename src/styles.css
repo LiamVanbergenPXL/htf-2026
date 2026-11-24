@@ -600,3 +600,23 @@ html[data-realm="DESYNC"] .fire-layer { transform-box: fill-box; transform-origi
   .quest-heading h2 { font-size: 1.05rem; }
   .world-camera { bottom: 6.8rem; }
 }
+.world-character-button { position: absolute; z-index: 2; right: 1rem; bottom: 9.2rem; display: flex; align-items: center; gap: .45rem; padding: .45rem .7rem; cursor: pointer; color: #f5e5c4; background: #172523ed; border: 1px solid #b3986d; border-radius: .45rem; font: 700 .85rem var(--font-sc); }
+.character-picker { margin: auto; width: min(47rem, calc(100% - 1rem)); max-height: 90dvh; overflow: auto; border: 1px solid #b69c68; border-radius: .8rem; color: #f7e8cc; background: #202d30; box-shadow: 0 22px 70px #081114b0; }
+.character-picker::backdrop { background: #071418ba; backdrop-filter: blur(4px); }
+.character-interior { padding: clamp(.85rem, 3vw, 1.6rem); }
+.character-interior header, .character-roster strong { display: flex; align-items: center; justify-content: space-between; gap: .45rem; }
+.character-interior h2 { font: 2rem var(--font-display); }
+.character-interior header button { cursor: pointer; padding: .45rem; }
+.character-roster { margin-top: 1rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.character-roster button { text-align: left; padding: .7rem; border: 1px solid #a98b5d85; border-radius: .4rem; cursor: pointer; background: radial-gradient(ellipse at 50% 40%, #435556, #172124); }
+.character-roster button:is(:hover,[aria-pressed="true"]) { border-color: #f2ce85; }
+.character-roster img { width: 100%; height: clamp(7rem, 18vw, 12rem); object-fit: contain; object-position: center bottom; }
+.character-roster strong { margin-top: .5rem; font: bold 1.1rem var(--font-sc); color: #f3d396; }
+.character-roster small { color: #e0d3bd; line-height: 1.2; display: block; }
+@media (max-width: 560px) {
+  .character-roster { grid-template-columns: 1fr; }
+  .character-roster button { display: grid; grid-template-columns: 4.5rem 1fr; column-gap: .75rem; align-items: center; }
+  .character-roster img { height: 4.7rem; grid-row: span 2; }
+  .character-roster strong { align-self: end; }
+  .character-roster small { align-self: start; }
+}

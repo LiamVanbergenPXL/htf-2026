@@ -1,4 +1,6 @@
 import * as T from 'three'
+import { buildHero } from './achrona-hero'
+import { characters, type CharacterId } from './achrona-characters'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { ACHRONA_BUILDINGS, type BuildingId } from './achrona-map'
 import { PLAZA, shore, onIsland, type MapPoint } from './achrona-scene'
@@ -193,18 +195,13 @@ export function createRealm(canvas: HTMLCanvasElement) {
     geometries.add(geometry)
     list.forEach(g => g.dispose())
   }
-  const hero = new T.Group(), body = new T.Group()
-  hero.add(body)
+  const hero = new T.Group()
   scene.add(hero)
-  const legs = [-.36, .36].map(x => box(body, x, .57, 0, .5, 1.14, .67, timber))
-  round(body, 0, 1.59, 0, .62, .93, 1.45, 0xd39332, 7)
-  mesh(body, jewel, 0xc3c99b, 0, 2.72, .06).scale.set(.85, .85, .72)
-  round(body, 0, 3.24, -.03, .32, .85, .6, 0xb08139, 7)
-  box(body, 0, 2.23, .16, 1.25, .24, .86, 0xb54831)
-  for (const x of [-.26,.26]) box(body, x, 2.88, .63, .13, .09, .08, night)
-  const shield = round(body, -.9, 1.62, .28, .68, .68, .2, brass, 8)
-  shield.rotation.x = Math.PI / 2
-  beam(body, [.72, 1.42, .12], [1.31, 3.03, .23], .19, trim)
+  const avatars = characters.map(({ id }) => {
+    const avatar = buildHero(id, mesh)
+    hero.add(avatar.root)
+    return { id, ...avatar }
+  })
   const beacon = mesh(scene, jewel, 0x8af5ef, 0, 2, 0)
   const wraith = mesh(scene, jewel, 0x91448a, 0, 2, 0)
   const fires = new Map<BuildingId,T.Group>()
@@ -234,9 +231,9 @@ export function createRealm(canvas: HTMLCanvasElement) {
       vector.copy(world(p)).project(camera)
       return { x: (vector.x + 1) * 50, y: (1 - vector.y) * 50 }
     },
-    frame(p: MapPoint, angle: number, moving: boolean, close: boolean, time: number, target: MapPoint | null, hazard: MapPoint | null, burning: Set<BuildingId>, reduced: boolean) {
+    frame(p: MapPoint, character: CharacterId, angle: number, moving: boolean, close: boolean, time: number, target: MapPoint | null, hazard: MapPoint | null, burning: Set<BuildingId>, reduced: boolean) {
       const aspect = width / height
-      const span = close ? Math.max(23, 20 / aspect) : Math.max(34, 55 / aspect)
+      const span = close ? Math.max(15, 11 / aspect) : Math.max(34, 55 / aspect)
       Object.assign(camera, { left: -span * aspect, right: span * aspect, top: span, bottom: -span })
       focus.set(close ? p.x - 50 : 0, close ? 1.7 : 2, close ? p.y - 50 : 0)
       camera.position.copy(focus).add(vector.set(0, 71, 84))
@@ -246,9 +243,10 @@ export function createRealm(canvas: HTMLCanvasElement) {
       hero.position.copy(world(p))
       hero.rotation.y = angle
       const stride = moving && !reduced ? Math.sin(time * 14) : 0
-      legs[0].rotation.x = stride * .63
-      legs[1].rotation.x = -stride * .63
-      body.position.y = Math.abs(stride) * .17
+      for (const avatar of avatars) {
+        avatar.root.visible = avatar.id === character
+        if (avatar.root.visible) avatar.animate(stride, time, reduced)
+      }
       for (const [id, fire] of fires) {
         fire.visible = burning.has(id)
         fire.scale.y = reduced ? 1 : 1 + Math.sin(time * 7 + fire.position.x) * .19
