@@ -91,16 +91,16 @@ export function DesyncSimulator({ glitches }: { glitches: Pick<Glitch, 'glitchId
       <h2 id="simulator-title">Desync-simulator</h2>
       <div className="hud-sim-actions">
         {busy && mode !== 'clearing' ? (
-          <button type="button" onClick={stop} className="hud-sim-button">
-            <Square aria-hidden="true" fill="currentColor" /> Stop
+          <button type="button" onClick={stop} className="hud-sim-button" title="Stop">
+            <Square aria-hidden="true" fill="currentColor" /> <span className="hud-sim-label">Stop</span>
           </button>
         ) : (
           <>
-            <button type="button" onClick={startWave} disabled={busy} className="hud-sim-button" data-primary>
-              <Swords aria-hidden="true" /> Desync-golf
+            <button type="button" onClick={startWave} disabled={busy} className="hud-sim-button" data-primary title="Desync-golf">
+              <Swords aria-hidden="true" /> <span className="hud-sim-label">Desync-golf</span>
             </button>
-            <button type="button" onClick={startResync} disabled={busy || openCount === 0} className="hud-sim-button">
-              <Sparkles aria-hidden="true" /> Resync
+            <button type="button" onClick={startResync} disabled={busy || openCount === 0} className="hud-sim-button" title="Resync">
+              <Sparkles aria-hidden="true" /> <span className="hud-sim-label">Resync</span>
             </button>
           </>
         )}
