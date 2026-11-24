@@ -253,6 +253,14 @@ export function createRealm(canvas: HTMLCanvasElement) {
       vector.project(camera)
       return { x: (vector.x + 1) * 50, y: (1 - vector.y) * 50 }
     },
+    projectVisitor(id: string) {
+      const visitor = visitors.get(id)
+      if (!visitor) return null
+      vector.copy(visitor.model.position)
+      vector.y += 6.2
+      vector.project(camera)
+      return { x: (vector.x + 1) * 50, y: (1 - vector.y) * 50 }
+    },
     frame(p: MapPoint, character: CharacterId, angle: number, moving: boolean, close: boolean, time: number, target: MapPoint | null, hazard: MapPoint | null, burning: Set<BuildingId>, reduced: boolean, peers: Player[], heraldAge: number | null) {
       const aspect = width / height
       const span = close ? Math.max(15, 11 / aspect) : Math.max(34, 55 / aspect)

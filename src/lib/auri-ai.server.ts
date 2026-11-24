@@ -56,8 +56,8 @@ export function buildIncidentSnapshot(incidents: AuriIncident[], question: strin
   }
 }
 
-export async function generateAuriAnswer({ model, question, history, incidents, checkedAt = new Date().toISOString() }: {
-  model: LanguageModel; question: string; history: AuriMessage[]; incidents: AuriIncident[]; checkedAt?: string
+export async function generateAuriAnswer({ model, question, history, incidents, disableReasoning = true, checkedAt = new Date().toISOString() }: {
+  model: LanguageModel; question: string; history: AuriMessage[]; incidents: AuriIncident[]; disableReasoning?: boolean; checkedAt?: string
 }): Promise<AuriAnswer> {
   const snapshot = buildIncidentSnapshot(incidents, question, history, checkedAt)
   const { text } = await generateText({
@@ -67,7 +67,7 @@ export async function generateAuriAnswer({ model, question, history, incidents, 
       ...history.slice(-8).map((message) => ({ role: message.role, content: message.content.slice(0, 800) })),
       { role: 'user', content: question },
     ],
-    reasoning: 'none', temperature: 0.2, maxOutputTokens: 700, maxRetries: 0,
+    ...(disableReasoning ? { reasoning: 'none' as const } : {}), temperature: 0.2, maxOutputTokens: 700, maxRetries: 0,
     abortSignal: AbortSignal.timeout(90000),
   })
   const content = text.trim()

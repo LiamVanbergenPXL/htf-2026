@@ -672,3 +672,28 @@ body:has(.achrona-world) .join-code { left:6.5rem; }
 .join-invite h2 {font:1.65rem var(--font-display);}
 .join-code .join-invite img {width:min(240px,70vw);height:auto;margin:.5rem auto;}
 .join-invite a,.join-invite button {display:block;margin:.35rem auto;padding:.5rem;text-decoration:underline;}
+
+.team-signature {
+  margin: 0 0 .3rem;
+  color: #775120;
+  font: 800 clamp(1.15rem, 2.3vw, 2rem)/1.1 var(--font-sc);
+  letter-spacing: .065em;
+}
+.world-title .team-signature {
+  display: table;
+  font-size: clamp(1rem, 2.8vw, 2.75rem);
+  letter-spacing: .035em;
+  padding: .16em .38em;
+  border-radius: .2rem;
+  color: #f7db9e;
+  background: #152521e6;
+}
+
+.world-locations :is([data-anchor], .world-player, .quest-shadow) {
+  left: var(--map-x);
+  top: var(--map-y);
+}
+.achrona-world[data-3d] [data-anchor] {
+  left: var(--projected-x, -100%);
+  top: var(--projected-y, -100%);
+}

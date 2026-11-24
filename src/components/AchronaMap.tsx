@@ -14,7 +14,10 @@ const directions: Record<string, [number, number]> = {
   arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0],
 }
 const door = ({ x, y }: MapPoint): MapPoint => ({ x, y: y + 2 })
-const at = ({ x, y }: MapPoint) => ({ left: `${x}%`, top: `${y}%` })
+const at = ({ x, y }: MapPoint): CSSProperties => ({
+  '--map-x': `${x}%`,
+  '--map-y': `${y}%`,
+} as CSSProperties)
 
 export function AchronaMap({ role, glitches, level, paused, onVisit, integrityHud }: {
   role: 'commander' | 'defender'
@@ -182,9 +185,12 @@ export function AchronaMap({ role, glitches, level, paused, onVisit, integrityHu
       const point = peer ?? (key === 'self' ? position.current : key === 'herald' ? { x: 46, y: 76 } : key === 'seal' ? seals[Math.min(objective.current, seals.length - 1)] :
         ACHRONA_BUILDINGS.find(b => b.id === key))
       if (!point) return
-      const projected = realm.current!.project(point, peer || key === 'self' ? 6.2 : key === 'herald' ? 5.4 : 0)
-      node.style.left = projected.x + '%'
-      node.style.top = projected.y + '%'
+      const projected = peer
+        ? realm.current!.projectVisitor(peer.guardianId)
+        : realm.current!.project(point, key === 'self' ? 6.2 : key === 'herald' ? 5.4 : 0)
+      if (!projected) return
+      node.style.setProperty('--projected-x', projected.x + '%')
+      node.style.setProperty('--projected-y', projected.y + '%')
     })
   })
 
@@ -291,9 +297,19 @@ export function AchronaMap({ role, glitches, level, paused, onVisit, integrityHu
       <canvas className="world-terrain" ref={canvas} aria-hidden="true" />
       <canvas className="world-stage" ref={stage} aria-hidden="true" />
       <header className="world-title">
+        <p className="team-signature">De Hexecuters</p>
         <h1 id="achrona-map-title">Achrona</h1>
       </header>
-      <div className="world-hud">{integrityHud}</div>
+      <div className="world-hud">
+        {integrityHud}
+        <div role="status">
+          {multiplayer.offline && (
+            <p className="mt-2 rounded border border-amber-300 bg-amber-950 px-2 py-1 text-center text-sm font-semibold text-amber-100">
+              Verbinding verbroken
+            </p>
+          )}
+        </div>
+      </div>
       <div className="world-locations" ref={markers}>
         {multiplayer.others.map(peer => (
           <div key={peer.guardianId} data-anchor={'peer-' + peer.guardianId} className="realm-peer" style={at(peer)}>

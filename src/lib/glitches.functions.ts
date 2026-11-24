@@ -13,7 +13,7 @@ export const getGlitches = createServerFn({ method: 'GET' })
     const guardian = await requireGuardian()
     if (!guardian.guardianId.startsWith('guest-')) return readGlitchOverview(guardian.role)
     const rows = await db.select({ glitchId: glitches.glitchId, status: glitches.status,
-      buildingId: glitches.buildingId, timestamp: glitches.timestamp }).from(glitches).all()
+      buildingId: glitches.buildingId, glitchType: glitches.glitchType, timestamp: glitches.timestamp }).from(glitches).all()
     return { defenders: [], glitches: rows.map(row => ({ ...row, description: 'Afwijking in Achrona',
       assignedDefenderId: null, assignedDefender: null, imageEchoIds: [], updates: [] })) }
   })

@@ -79,7 +79,7 @@ export function AuriChat({ busy, speaking, onRead, onStop, onGlitch }: AuriChatP
           {messages.length ? <button type="button" disabled={pending || busy} onClick={() => { onStop(); setMessages([]); setError('') }} className="text-xs text-muted underline disabled:opacity-50">Nieuw gesprek</button> : null}
         </div>
       </div>
-      <p className="mt-1 text-xs text-muted">Lokale AI via Ollama, met actuele incidentgegevens als context. Vraag naar een status, glitch-ID of aanpak.</p>
+      <p className="mt-1 text-xs text-muted">AI via Ollama, met actuele incidentgegevens als context. Vraag naar een status, glitch-ID of aanpak.</p>
       <p className="mt-2 text-xs text-violet-700">Auri spreekt haar antwoorden automatisch uit.</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {suggestions.map((suggestion) => <button key={suggestion} type="button" disabled={pending || busy}

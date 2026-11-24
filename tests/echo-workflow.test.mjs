@@ -130,7 +130,7 @@ test('echo reporting and commander permissions through real HTTP server function
     await t.test('defender report creates two linked records using server identity and time', async () => {
       const before = Date.now()
       const { response, body } = await rpc('reportEcho', {
-        description: '  Magic fading near the tower  ',
+        description: '  Magic fading near the tower  ', glitchType: 'magic',
         reportingGuardianId: 'guardian-commander', timestamp: '2000-01-01', status: 'FIXED',
       }, defender)
       assert.equal(response.status, 200, body)
@@ -143,6 +143,7 @@ test('echo reporting and commander permissions through real HTTP server function
       glitchId = glitch.glitch_id
       assert.equal(glitch.status, 'LEAKED')
       assert.equal(glitch.description, 'Magic fading near the tower')
+      assert.equal(glitch.glitch_type, 'magic')
       assert.equal(echo.description, glitch.description)
       assert.equal(echo.glitch_id, glitchId)
       assert.equal(echo.reporting_guardian_id, 'guardian-defender')
@@ -234,6 +235,7 @@ test('echo reporting and commander permissions through real HTTP server function
     await t.test('multipart submission without an image remains supported', async () => {
       const report = upload('No photo needed')
       report.set('buildingId', 'archive')
+      report.set('glitchType', 'sensor')
       const { response, body } = await rpc('reportEcho', report, defender)
       assert.equal(response.status, 200, body)
       assert.equal(count('echoes'), 3)

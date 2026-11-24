@@ -9,7 +9,7 @@ export function useWorldPlayers(readPose: () => Pose, inside: boolean) {
   const pose = useEffectEvent(readPose)
   const [others, setOthers] = useState<Player[]>([])
   const [self, setSelf] = useState<Player | null>(null)
-  const [online, setOnline] = useState(false)
+  const [connection, setConnection] = useState<'connecting' | 'online' | 'offline'>('connecting')
   const [sending, setSending] = useState(false)
   const [queue, setQueue] = useState<Announcement[]>([])
   const [herald, setHerald] = useState<Announcement | null>(null)
@@ -20,12 +20,25 @@ export function useWorldPlayers(readPose: () => Pose, inside: boolean) {
     let active = true
     let timer: ReturnType<typeof setTimeout>
     let initialized = false
+    let polling = false
+    let disconnected = false
+    function markOffline() {
+      disconnected = true
+      setConnection('offline')
+    }
+    if (!navigator.onLine) markOffline()
     async function poll() {
+      if (!active || polling) return
+      polling = true
+      const started = performance.now()
       const speech = pending.current
       try {
         const result = await syncWorld({ data: { ...pose(), speech } })
         if (!active) return
-        setOnline(true)
+        if (!navigator.onLine) return
+        const recovered = disconnected
+        disconnected = false
+        setConnection('online')
         setSelf(result.self)
         setOthers(result.others)
         if (speech && pending.current?.id === speech.id) {
@@ -38,16 +51,34 @@ export function useWorldPlayers(readPose: () => Pose, inside: boolean) {
         initialized = true
         if (fresh.length) {
           setQueue(list => [...list, ...fresh])
-          void router.invalidate().catch(() => {})
         }
+        if (fresh.length || recovered) void router.invalidate().catch(() => {})
       } catch {
-        if (active) { setOnline(false); setSelf(null); setOthers([]) }
+        if (active) markOffline()
       } finally {
-        if (active) timer = setTimeout(poll, document.hidden ? 2500 : 450)
+        polling = false
+        if (active) {
+          const interval = document.hidden ? 2500 : 150
+          timer = setTimeout(poll, Math.max(40, interval - (performance.now() - started)))
+        }
       }
     }
+    function wake() {
+      if (document.hidden) return
+      clearTimeout(timer)
+      void poll()
+    }
+    document.addEventListener('visibilitychange', wake)
+    window.addEventListener('offline', markOffline)
+    window.addEventListener('online', wake)
     void poll()
-    return () => { active = false; clearTimeout(timer) }
+    return () => {
+      active = false
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', wake)
+      window.removeEventListener('offline', markOffline)
+      window.removeEventListener('online', wake)
+    }
   }, [router])
 
   useEffect(() => {
@@ -70,5 +101,5 @@ export function useWorldPlayers(readPose: () => Pose, inside: boolean) {
     return true
   }
 
-  return { others, self, online, herald, sending, speak }
+  return { others, self, online: connection === 'online', offline: connection === 'offline', herald, sending, speak }
 }

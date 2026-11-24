@@ -51,6 +51,7 @@ function LoginPage() {
         <div className="mb-5 flex justify-center text-accent">
           <D20 className="size-14" faceClassName="fill-gilt/30" />
         </div>
+        <p className="team-signature text-center">De Hexecuters</p>
         <h1 className="text-center font-display text-4xl text-fg">Guardian login</h1>
         <p className="read-aloud mt-4 text-fg">Meld je aan bij het Control Center.</p>
         <a className="tome-button mt-4 inline-block px-4 py-2" href="/play">Speel mee als gast</a>

@@ -1,7 +1,7 @@
 import { blob, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 // Relative import: drizzle-kit loads this file and doesn't resolve the `#/` alias.
 import type { BuildingId } from '../lib/achrona-map.ts'
-import { GLITCH_STATUSES } from '../lib/glitch.ts'
+import { GLITCH_STATUSES, GLITCH_TYPES } from '../lib/glitch.ts'
 
 export const guardians = sqliteTable('guardians', {
   guardianId: text('guardian_id').primaryKey(),
@@ -14,6 +14,7 @@ export const guardians = sqliteTable('guardians', {
 export const glitches = sqliteTable('glitches', {
   glitchId: text('glitch_id').primaryKey(),
   buildingId: text('building_id').$type<BuildingId>(),
+  glitchType: text('glitch_type', { enum: GLITCH_TYPES }),
   status: text('status', { enum: GLITCH_STATUSES }).notNull(),
   assignedDefenderId: text('assigned_defender_id').references(() => guardians.guardianId, { onDelete: 'set null' }),
   description: text('description').notNull(),

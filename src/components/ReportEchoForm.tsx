@@ -1,3 +1,4 @@
+import { GLITCH_TYPES, GLITCH_TYPE_LABELS } from '#/lib/glitch'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
@@ -130,7 +131,10 @@ export function ReportEchoForm({ role, room, onGlitch }: {
     try {
       const data = new FormData()
       data.set('description', description)
-      const location = new FormData(event.currentTarget).get('buildingId')
+      const fields = new FormData(event.currentTarget)
+      const location = fields.get('buildingId')
+      const glitchType = fields.get('glitchType')
+      if (typeof glitchType === 'string') data.set('glitchType', glitchType)
       if (typeof location === 'string') data.set('buildingId', location)
       if (image) data.set('image', image)
       const result = await submitEcho({ data })
@@ -167,6 +171,13 @@ export function ReportEchoForm({ role, room, onGlitch }: {
             <select name="buildingId" required defaultValue="" className="tome-input px-3 py-2">
               <option value="" disabled>Kies een gebouw</option>
               {ACHRONA_BUILDINGS.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-1 font-sc text-base font-bold text-accent">
+            Glitchtype
+            <select name="glitchType" required defaultValue="" className="tome-input px-3 py-2">
+              <option value="" disabled>Kies een type</option>
+              {GLITCH_TYPES.map(type => <option key={type} value={type}>{GLITCH_TYPE_LABELS[type]}</option>)}
             </select>
           </label>
           <label htmlFor="echo-description" className="font-sc text-base font-bold text-accent">Beschrijving</label>

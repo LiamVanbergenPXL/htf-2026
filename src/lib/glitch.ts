@@ -10,9 +10,20 @@ export const GLITCH_STATUSES = [
 
 export type GlitchStatus = (typeof GLITCH_STATUSES)[number]
 
+export const GLITCH_TYPES = ['sensor', 'network', 'magic', 'other'] as const
+export type GlitchType = typeof GLITCH_TYPES[number]
+export const GLITCH_TYPE_LABELS: Record<GlitchType, string> = {
+  sensor: 'Sensor', network: 'Netwerk', magic: 'Magie', other: 'Overig',
+}
+
+export function isGlitchType(value: unknown): value is GlitchType {
+  return GLITCH_TYPES.some(type => type === value)
+}
+
 export type Glitch = {
   glitchId: string
   status: GlitchStatus
+  glitchType?: GlitchType | null
   buildingId?: BuildingId | null
   description: string
   /** ISO 8601 */

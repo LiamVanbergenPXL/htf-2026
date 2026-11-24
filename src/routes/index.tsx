@@ -77,6 +77,11 @@ function OverviewPage() {
         integrityHud={
           <div className="world-hud-stack">
             <RealmIntegrityMeter glitches={glitches} />
+            {(level === 'CRITICAL' || level === 'DESYNC') && (
+              <div className="rounded border border-red-300 bg-red-950 px-2 py-1 text-center font-sc text-sm font-bold text-red-100" role="alert">
+                Lockdown actief
+              </div>
+            )}
             {guardian?.role === 'commander' ? <DesyncSimulator glitches={glitches} /> : null}
           </div>
         } />
@@ -114,7 +119,7 @@ function OverviewPage() {
               {guardian?.guardianId.startsWith('guest-') ? <p>Raadsrapporten zijn toegankelijk voor aangemelde Guardians.</p> : <a href={playerUrl('/reports/achrona.pdf', speler)} download className="tome-button inline-block px-4 py-2">Rapport opslaan als PDF</a>}
             </section>
             <div hidden={building !== 'post'}>
-              <GlitchesTable speler={speler} key={glitchLink?.version} defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined}
+              <GlitchesTable active={building === 'post'} canUseAuri={Boolean(guardian && !guardian.guardianId.startsWith('guest-'))} speler={speler} key={glitchLink?.version} defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined}
                 glitches={glitches} canChangeStatus={guardian?.role === 'commander'} />
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { isGlitchType } from './glitch'
 import { randomUUID } from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { db } from '#/db/index.ts'
@@ -10,7 +11,7 @@ import { validateEchoImage } from './echo-image.server'
 export const reportEcho = createServerFn({ method: 'POST' })
   .validator((input: unknown) => {
     const multipart = input instanceof FormData
-    const data = multipart ? { description: input.get('description'), buildingId: input.get('buildingId') } : input as { description?: unknown; buildingId?: unknown } | null
+    const data = multipart ? { description: input.get('description'), buildingId: input.get('buildingId'), glitchType: input.get('glitchType') } : input as { description?: unknown; buildingId?: unknown; glitchType?: unknown } | null
     if (!data || typeof data.description !== 'string') {
       throw new Error('Vul een beschrijving in.')
     }
@@ -22,7 +23,9 @@ export const reportEcho = createServerFn({ method: 'POST' })
     if (image !== null && !(image instanceof File)) throw new Error('Ongeldig afbeeldingsbestand.')
     const buildingId = data.buildingId ?? null
     if (buildingId !== null && !isBuildingId(buildingId)) throw new Error('Kies een geldig gebouw.')
-    return { description, image, buildingId }
+    const glitchType = data.glitchType ?? null
+    if (glitchType !== null && !isGlitchType(glitchType)) throw new Error('Kies een geldig glitchtype.')
+    return { description, image, buildingId, glitchType }
   })
   .handler(async ({ data }) => {
     const guardian = await requireGuardian()
@@ -34,7 +37,7 @@ export const reportEcho = createServerFn({ method: 'POST' })
 
     // Echo, glitch and optional image commit together; no partial reports.
     await db.transaction(async (tx) => {
-      await tx.insert(glitches).values({ glitchId, buildingId: data.buildingId, status: 'LEAKED', description: data.description, timestamp }).run()
+      await tx.insert(glitches).values({ glitchId, glitchType: data.glitchType, buildingId: data.buildingId, status: 'LEAKED', description: data.description, timestamp }).run()
       await tx.insert(echoes).values({
         echoId, glitchId, description: data.description, timestamp,
         reportingGuardianId: guardian.guardianId,
