@@ -126,9 +126,9 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
   return (
     <section aria-labelledby="glitches-title" className="stat-block flex flex-col gap-4 p-6">
       <h2 id="glitches-title" className="tome-heading text-2xl">Glitches <span role="status" className="font-sans font-normal text-muted">({visible.length} van {glitches.length})</span></h2>
-      <p className="text-sm text-muted">J · volgende glitch  /  K · vorige glitch</p>
-      <div className="grid gap-3 border border-dashed border-[#a88a5c] bg-[#ecdcb6]/40 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <label className="grid gap-1 font-sc text-sm font-bold text-accent">
+      {/* Two filters per row on phones; search gets the full row there. */}
+      <div className="grid grid-cols-2 gap-3 border border-dashed border-[#a88a5c] bg-[#ecdcb6]/40 p-3 sm:p-4 lg:grid-cols-3 xl:grid-cols-5">
+        <label className="col-span-2 grid gap-1 font-sc text-sm font-bold text-accent sm:col-span-1">
           Zoeken
           <input type="search" value={filters.query} onChange={(event) => update('query', event.target.value)}
             placeholder="Trefwoorden of glitch-ID" className={fieldClass} />
@@ -164,13 +164,14 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
             <option value="status">Op status</option>
           </select>
         </label>
-        {invalidRange ? <p role="alert" className="text-sm font-semibold text-accent sm:col-span-2">De einddatum moet op of na de begindatum liggen.</p> : null}
+        {invalidRange ? <p role="alert" className="col-span-2 text-sm font-semibold text-accent">De einddatum moet op of na de begindatum liggen.</p> : null}
         <button type="button" onClick={() => setFilters(defaults)} className="justify-self-start self-end font-sc text-sm font-bold text-accent underline">
           Filters wissen
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left">
+        {/* glitch-table: rows become stacked cards on phones (see styles.css). */}
+        <table className="glitch-table w-full text-left lg:min-w-[720px]">
           <thead>
             <tr className="border-b-2 border-accent/70 font-sc text-accent">
               {columns.map((col) => (
@@ -179,20 +180,12 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
             </tr>
           </thead>
           <tbody className="text-fg">
-            {visible.map((glitch) => {
-              const TypeIcon = typeIcons[glitch.glitchType ?? 'untyped']
-              return (
-              <tr key={glitch.glitchId} id={`glitch-${glitch.glitchId}`} tabIndex={-1} onFocus={() => setSelectedId(glitch.glitchId)}
-                className="scroll-mt-8 border-b border-dotted border-[#a88a5c] even:bg-[#ecdcb6]/40 target:bg-gilt/20 data-[selected=true]:bg-gilt/25"
-                data-selected={glitch.glitchId === selectedId}>
-                <td className="max-w-40 px-4 py-4 align-top">
+            {visible.map((glitch) => (
+              <tr key={glitch.glitchId} id={`glitch-${glitch.glitchId}`} className="scroll-mt-8 border-b border-dotted border-[#a88a5c] even:bg-[#ecdcb6]/40 target:bg-gilt/20">
+                <td data-label={columns[0]} className="max-w-40 px-4 py-4 align-top">
                   <span className="block truncate font-sc font-bold" title={glitch.glitchId}>{glitch.glitchId}</span>
                 </td>
-                <td className="min-w-64 px-4 py-4 align-top [overflow-wrap:anywhere]">
-                  <span className="mb-1 inline-flex items-center gap-1 rounded border border-gilt/50 px-2 py-0.5 text-xs font-medium text-accent">
-                    <TypeIcon size={14} aria-hidden="true" />
-                    {glitch.glitchType ? GLITCH_TYPE_LABELS[glitch.glitchType] : 'Zonder type'}
-                  </span>
+                <td data-label={columns[1]} data-stack className="min-w-64 px-4 py-4 align-top [overflow-wrap:anywhere]">
                   <p className="whitespace-pre-wrap">{glitch.description}</p>
                   <p className="mt-1 text-xs text-muted">{glitch.assignedDefender ?? 'Niet toegewezen'}</p>
                   <GlitchAssignment key={glitch.assignedDefenderId ?? ''} glitch={glitch} defenders={defenders}
@@ -217,18 +210,18 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
                     </div>
                   ) : null}
                 </td>
-                <td className="px-4 py-4 align-top">
+                <td data-label={columns[2]} className="px-4 py-4 align-top">
                   <span className={`inline-block rounded-full border-2 px-2.5 py-0.5 text-xs font-bold tracking-wide shadow-[inset_0_-2px_0_rgb(0_0_0/.2)] ${statusClasses[glitch.status]}`}>
                     {glitch.status}
                   </span>
                 </td>
-                <td className="px-4 py-4 align-top whitespace-nowrap italic text-muted">
+                <td data-label={columns[3]} className="px-4 py-4 align-top whitespace-nowrap italic text-muted">
                   <time dateTime={glitch.timestamp} suppressHydrationWarning>
                     {timestampFormat.format(new Date(glitch.timestamp))}
                   </time>
                 </td>
                 {canChangeStatus ? (
-                  <td className="px-4 py-4 align-top">
+                  <td data-label={columns[4]} data-stack className="px-4 py-4 align-top">
                     <GlitchStatusControl key={`${glitch.glitchId}:${glitch.status}`} glitch={glitch} />
                   </td>
                 ) : null}

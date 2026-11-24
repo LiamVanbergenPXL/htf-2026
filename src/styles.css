@@ -673,27 +673,56 @@ body:has(.achrona-world) .join-code { left:6.5rem; }
 .join-code .join-invite img {width:min(240px,70vw);height:auto;margin:.5rem auto;}
 .join-invite a,.join-invite button {display:block;margin:.35rem auto;padding:.5rem;text-decoration:underline;}
 
-.team-signature {
-  margin: 0 0 .3rem;
-  color: #775120;
-  font: 800 clamp(1.15rem, 2.3vw, 2rem)/1.1 var(--font-sc);
-  letter-spacing: .065em;
-}
-.world-title .team-signature {
-  display: table;
-  font-size: clamp(1rem, 2.8vw, 2.75rem);
-  letter-spacing: .035em;
-  padding: .16em .38em;
-  border-radius: .2rem;
-  color: #f7db9e;
-  background: #152521e6;
+/* ---------------------------------------------------------------------------
+   Phones (≤ 640px). Kept last so it wins over the world rules above.
+--------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  /* Map: small title top left, compact HUD top right, nothing overlapping. */
+  .world-title { top: .55rem; left: .7rem; }
+  .world-title h1 { font-size: 1.7rem; }
+  .world-hud { top: .45rem; right: .45rem; }
+  .world-hud-stack { width: 9.75rem; gap: .35rem; }
+  .realm-hud-panel { padding: .4rem .55rem; }
+  .realm-hud-content { min-width: 0; }
+  .realm-hud-content h2, .hud-sim h2 { font-size: .72rem; }
+  .realm-hud-content strong { font-size: 1.05rem; }
+  .hud-sim { max-width: none; gap: .3rem; }
+  .hud-sim-actions { flex-wrap: nowrap; }
+  .hud-sim-button { flex: 1; justify-content: center; min-height: 40px; padding: .3rem; }
+  .hud-sim-button svg { width: 1.1rem; height: 1.1rem; }
+  /* Icon-only on phones; the label stays available to screen readers. */
+  .hud-sim-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* Seal quest moves to the bottom left, above the walk control. */
+  .quest-panel { top: auto; bottom: 6.6rem; left: .6rem; width: calc(100% - 11rem); padding: .4rem .6rem; }
+  .quest-panel p, .quest-panel small { font-size: .78rem; }
+  .quest-heading h2 { font-size: 1.05rem; }
+
+  /* Character picker as a round icon button; its text remains the accessible name. */
+  .world-character-button { width: 44px; height: 44px; padding: 0; justify-content: center; font-size: 0; border-radius: 50%; }
+  .world-character-button svg { width: 20px; height: 20px; }
+  .world-camera, .realm-chat button { font-size: .76rem; padding: .35rem .55rem; }
+
+  /* A QR code to join is pointless on the phone you are already playing on. */
+  .join-code { display: none; }
+
+  /* Building rooms: less padding so content gets the width. */
+  .world-room-content .stat-block { padding: 1rem; }
+
+
 }
 
-.world-locations :is([data-anchor], .world-player, .quest-shadow) {
-  left: var(--map-x);
-  top: var(--map-y);
-}
-.achrona-world[data-3d] [data-anchor] {
-  left: var(--projected-x, -100%);
-  top: var(--projected-y, -100%);
+/* Glitch register as cards up to tablet width, where the full table no longer fits. */
+@media (max-width: 1023px) {
+  /* Glitch register: each row becomes a card with labelled fields. */
+  .glitch-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .glitch-table, .glitch-table tbody, .glitch-table tr { display: block; width: 100%; }
+  .glitch-table tr { padding: .6rem 0; }
+  .glitch-table td { display: grid; grid-template-columns: 6.25rem minmax(0, 1fr); align-items: start; gap: .5rem; max-width: none; min-width: 0; padding: .3rem 0; white-space: normal; }
+  .glitch-table td[data-stack] { display: block; }
+  .glitch-table td:not([data-label]) { display: block; }
+  .glitch-table td[data-label]::before { content: attr(data-label); font: 700 .8rem var(--font-sc); font-style: normal; color: var(--accent); padding-top: .15rem; }
+  .glitch-table td[data-stack]::before { display: block; margin-bottom: .2rem; }
+  /* Status select and Save button wrap instead of running off the card. */
+  .glitch-table form > div { flex-wrap: wrap; }
 }
