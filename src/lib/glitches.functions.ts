@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto'
 import { MAX_ECHO_DESCRIPTION_LENGTH } from './echo'
 import { requireGuardian } from './auth.server'
 import { readGlitchOverview } from './glitch-overview.server'
-import { GLITCH_STATUSES, type GlitchStatus } from './glitch'
+import { GLITCH_STATUSES, isGlitchType, type GlitchStatus, type GlitchType } from './glitch'
 
 export const getGlitches = createServerFn({ method: 'GET' })
   .handler(async () => {
@@ -34,6 +34,27 @@ export const updateGlitchStatus = createServerFn({ method: 'POST' })
       return { success: false, error: 'Alleen commanders mogen de status wijzigen.' } as const
     }
     const result = await db.update(glitches).set({ status: data.status })
+      .where(eq(glitches.glitchId, data.glitchId)).run()
+    if (result.rowsAffected === 0) return { success: false, error: 'Deze glitch bestaat niet meer.' } as const
+    return { success: true } as const
+  })
+
+/** Lets a commander classify an existing glitch or correct a wrongly chosen type. null clears it. */
+export const updateGlitchType = createServerFn({ method: 'POST' })
+  .validator((input: unknown) => {
+    const data = input as { glitchId?: unknown; glitchType?: unknown } | null
+    if (!data || typeof data.glitchId !== 'string' || !data.glitchId.trim() || data.glitchId.length > 100
+      || (data.glitchType !== null && !isGlitchType(data.glitchType))) {
+      throw new Error('Ongeldige glitch of type.')
+    }
+    return { glitchId: data.glitchId, glitchType: data.glitchType as GlitchType | null }
+  })
+  .handler(async ({ data }) => {
+    const guardian = await requireGuardian()
+    if (guardian.role !== 'commander') {
+      return { success: false, error: 'Alleen commanders mogen het type wijzigen.' } as const
+    }
+    const result = await db.update(glitches).set({ glitchType: data.glitchType })
       .where(eq(glitches.glitchId, data.glitchId)).run()
     if (result.rowsAffected === 0) return { success: false, error: 'Deze glitch bestaat niet meer.' } as const
     return { success: true } as const

@@ -1,7 +1,7 @@
 import { JoinCode } from '#/components/JoinCode'
 import { playerUrl } from '#/lib/player-slot'
 import {createFileRoute, redirect} from '@tanstack/react-router'
-import {GlitchesTable} from '#/components/GlitchesTable.tsx'
+import {GlitchesTable, OPEN_STATUS_FILTER} from '#/components/GlitchesTable.tsx'
 import {getGlitches} from '#/lib/glitches.functions.ts'
 import {ReportEchoForm} from '#/components/ReportEchoForm'
 import {RealmIntegrityMeter} from '#/components/RealmIntegrityMeter'
@@ -31,11 +31,21 @@ function OverviewPage() {
   const room = ACHRONA_BUILDINGS.find(({ id }) => id === building)
   const localGlitches = building ? glitches.filter(({ buildingId }) => buildingId === building) : []
   const [glitchLink, setGlitchLink] = useState<{ id: string; version: number } | null>(null)
+  // Bumped when the lockdown alert opens the register on open glitches; 0 means no preset filter.
+  const [openView, setOpenView] = useState(0)
+  const openCount = glitches.filter(({ status }) => status !== 'FIXED').length
   useRealmLevelOnPage(level)
 
   function openGlitch(id: string) {
+    setOpenView(0)
     setBuilding('post')
     setGlitchLink((current) => ({ id, version: (current?.version ?? 0) + 1 }))
+  }
+
+  function showOpenGlitches() {
+    setGlitchLink(null)
+    setOpenView((current) => current + 1)
+    setBuilding('post')
   }
 
   useEffect(() => {
@@ -67,6 +77,7 @@ function OverviewPage() {
 
   function visitBuilding(id: BuildingId) {
     setGlitchLink(null)
+    setOpenView(0)
     setBuilding(id)
   }
 
@@ -78,8 +89,14 @@ function OverviewPage() {
           <div className="world-hud-stack">
             <RealmIntegrityMeter glitches={glitches} />
             {(level === 'CRITICAL' || level === 'DESYNC') && (
-              <div className="rounded border border-red-300 bg-red-950 px-2 py-1 text-center font-sc text-sm font-bold text-red-100" role="alert">
-                Lockdown actief
+              <div role="alert">
+                <button type="button" onClick={showOpenGlitches}
+                  className="block min-h-11 w-full rounded border border-red-300 bg-red-950 px-2 py-1 text-center font-sc text-sm font-bold text-red-100 transition hover:bg-red-900 focus-visible:outline-2 focus-visible:outline-red-200">
+                  Lockdown actief
+                  <span className="block font-sans text-xs font-normal underline">
+                    Bekijk {openCount} open {openCount === 1 ? 'glitch' : 'glitches'}
+                  </span>
+                </button>
               </div>
             )}
             {guardian?.role === 'commander' ? <DesyncSimulator glitches={glitches} /> : null}
@@ -119,7 +136,8 @@ function OverviewPage() {
               {guardian?.guardianId.startsWith('guest-') ? <p>Raadsrapporten zijn toegankelijk voor aangemelde Guardians.</p> : <a href={playerUrl('/reports/achrona.pdf', speler)} download className="tome-button inline-block px-4 py-2">Rapport opslaan als PDF</a>}
             </section>
             <div hidden={building !== 'post'}>
-              <GlitchesTable active={building === 'post'} canUseAuri={Boolean(guardian && !guardian.guardianId.startsWith('guest-'))} speler={speler} key={glitchLink?.version} defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined}
+              <GlitchesTable active={building === 'post'} canUseAuri={Boolean(guardian && !guardian.guardianId.startsWith('guest-'))} speler={speler} key={`${glitchLink?.version ?? 0}:${openView}`}
+                initialStatus={openView ? OPEN_STATUS_FILTER : ''} defenders={defenders} defenderId={guardian?.role === 'defender' ? guardian.guardianId : undefined}
                 glitches={glitches} canChangeStatus={guardian?.role === 'commander'} />
             </div>
           </div>

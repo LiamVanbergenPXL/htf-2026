@@ -210,6 +210,23 @@ test('echo reporting and commander permissions through real HTTP server function
       assert.equal(count('echoes'), 2)
     })
 
+    await t.test('only a commander can reclassify a glitch type; invalid types and missing glitches are rejected', async () => {
+      // noinspection SqlNoDataSourceInspection
+      const typeOf = () => sqlite.prepare('SELECT glitch_type FROM glitches WHERE glitch_id = ?').get(glitchId).glitch_type
+      assert.equal(typeOf(), 'magic')
+      assert.match((await rpc('updateGlitchType', { glitchId, glitchType: 'network', role: 'commander' }, defender)).body, /Alleen commanders/)
+      assert.match((await rpc('updateGlitchType', { glitchId, glitchType: 'network' })).body, /login/)
+      assert.equal(typeOf(), 'magic')
+      for (const glitchType of ['sensor', 'network', 'other', null, 'magic']) {
+        const { response, body } = await rpc('updateGlitchType', { glitchId, glitchType }, commander)
+        assert.equal(response.status, 200, body)
+        assert.equal(typeOf(), glitchType)
+      }
+      await rpc('updateGlitchType', { glitchId, glitchType: 'dragons' }, commander)
+      assert.equal(typeOf(), 'magic')
+      assert.match((await rpc('updateGlitchType', { glitchId: 'missing', glitchType: 'sensor' }, commander)).body, /bestaat niet meer/)
+    })
+
     await t.test('overview renders report form for both roles and status controls only for commander', async () => {
       for (const [cookie, canEdit] of [[defender, false], [commander, true]]) {
         const response = await fetch(base, { headers: { cookie } })
@@ -221,6 +238,8 @@ test('echo reporting and commander permissions through real HTTP server function
         assert.match(html, /Vraag Auri/)
         assert.match(html, /Magic fading near the tower/)
         assert.equal(html.includes('Status wijzigen voor'), canEdit)
+        assert.equal(html.includes('Type wijzigen voor'), canEdit)
+        assert.match(html, /Alle open glitches/)
         // Only defenders get glitches assigned, so only they get the one-click filter.
         assert.equal(html.includes('Mijn glitches'), !canEdit)
       }

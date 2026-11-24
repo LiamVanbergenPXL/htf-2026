@@ -5,6 +5,7 @@ import { playerUrl } from '#/lib/player-slot'
 import { GlitchAssignment } from '#/components/GlitchAssignment'
 import { useEffect, useEffectEvent, useState } from 'react'
 import { GlitchStatusControl } from '#/components/GlitchStatusControl'
+import { GlitchTypeControl } from '#/components/GlitchTypeControl'
 import { GLITCH_STATUSES, GLITCH_TYPES, GLITCH_TYPE_LABELS, type Glitch, type GlitchStatus } from '#/lib/glitch.ts'
 
 // Wax seals: blood red, gilt, steel blue, verdigris.
@@ -77,9 +78,13 @@ const defaults = { type: '', query: '', status: '', from: '', to: '', sort: 'new
 const fieldClass = 'tome-input min-w-0 w-full px-3 py-2 font-sans text-sm font-normal text-fg'
 const normalize = (value: string) => value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
 
-export function GlitchesTable({ active = true, canUseAuri = false, speler, glitches, canChangeStatus = false, defenders = [], defenderId }: { active?: boolean; canUseAuri?: boolean; speler?: string; glitches: Glitch[]; canChangeStatus?: boolean; defenders?: { id: string; name: string }[]; defenderId?: string }) {
+/** Status filter value for every glitch that is not FIXED yet. */
+export const OPEN_STATUS_FILTER = 'open'
+
+export function GlitchesTable({ active = true, canUseAuri = false, speler, glitches, canChangeStatus = false, defenders = [], defenderId, initialStatus = '' }: { active?: boolean; canUseAuri?: boolean; speler?: string; glitches: Glitch[]; canChangeStatus?: boolean; defenders?: { id: string; name: string }[]; defenderId?: string; initialStatus?: string }) {
   const [selectedId, setSelectedId] = useState<string>()
-  const [filters, setFilters] = useState(defaults)
+  // initialStatus lets the lockdown alert open the register already filtered on open glitches.
+  const [filters, setFilters] = useState(() => ({ ...defaults, status: initialStatus }))
   // Defenders only: show just the glitches assigned to them.
   const [mineOnly, setMineOnly] = useState(false)
   const mineCount = defenderId ? glitches.filter((glitch) => glitch.assignedDefenderId === defenderId).length : 0
@@ -89,7 +94,8 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
   const keywords = normalize(filters.query).trim().split(/\s+/).filter(Boolean)
   const visible = glitches.filter((glitch) => {
     if (mineOnly && glitch.assignedDefenderId !== defenderId) return false
-    if (invalidRange || (filters.status && glitch.status !== filters.status)) return false
+    if (invalidRange) return false
+    if (filters.status === OPEN_STATUS_FILTER ? glitch.status === 'FIXED' : filters.status && glitch.status !== filters.status) return false
     if (filters.type && filters.type !== (glitch.glitchType ?? 'untyped')) return false
     const typeLabel = glitch.glitchType ? GLITCH_TYPE_LABELS[glitch.glitchType] : 'Zonder type'
     const searchable = normalize(`${glitch.glitchId} ${glitch.description} ${glitch.status} ${typeLabel}`)
@@ -125,7 +131,7 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [active])
 
-  const columns = ['ID', 'Description', 'Status', 'Timestamp', ...(canChangeStatus ? ['Status wijzigen'] : [])]
+  const columns = ['ID', 'Description', 'Status', 'Timestamp', ...(canChangeStatus ? ['Status en type'] : [])]
 
   return (
     <section aria-labelledby="glitches-title" className="stat-block flex flex-col gap-4 p-6">
@@ -149,6 +155,7 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
           Status
           <select value={filters.status} onChange={(event) => update('status', event.target.value)} className={fieldClass}>
             <option value="">Alle statussen</option>
+            <option value={OPEN_STATUS_FILTER}>Alle open glitches</option>
             {GLITCH_STATUSES.map((status) => <option key={status}>{status}</option>)}
           </select>
         </label>
@@ -235,6 +242,9 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
                 {canChangeStatus ? (
                   <td data-label={columns[4]} data-stack className="px-4 py-4 align-top">
                     <GlitchStatusControl key={`${glitch.glitchId}:${glitch.status}`} glitch={glitch} />
+                    <div className="mt-2">
+                      <GlitchTypeControl key={`${glitch.glitchId}:${glitch.glitchType ?? ''}`} glitch={glitch} />
+                    </div>
                   </td>
                 ) : null}
               </tr>
