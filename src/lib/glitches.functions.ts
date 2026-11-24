@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { desc, eq } from 'drizzle-orm'
 import { db } from '#/db/index.ts'
-import { glitches } from '#/db/schema.ts'
+import { echoes, echoImages, glitches } from '#/db/schema.ts'
 import type { Glitch } from '#/lib/glitch.ts'
 import { requireGuardian } from './auth.server'
 import { GLITCH_STATUSES, type GlitchStatus } from './glitch'
@@ -9,7 +9,17 @@ import { GLITCH_STATUSES, type GlitchStatus } from './glitch'
 export const getGlitches = createServerFn({ method: 'GET' }).handler(
   async (): Promise<Glitch[]> => {
     requireGuardian()
-    return db.select().from(glitches).orderBy(desc(glitches.timestamp)).all()
+    const rows = db.select().from(glitches).orderBy(desc(glitches.timestamp)).all()
+    // Fetch only attachment IDs here; full image bytes have their own protected route.
+    const images = db.select({ echoId: echoImages.echoId, glitchId: echoes.glitchId })
+      .from(echoImages).innerJoin(echoes, eq(echoImages.echoId, echoes.echoId)).all()
+    const imagesByGlitch = new Map<string, string[]>()
+    for (const image of images) {
+      const ids = imagesByGlitch.get(image.glitchId) ?? []
+      ids.push(image.echoId)
+      imagesByGlitch.set(image.glitchId, ids)
+    }
+    return rows.map((glitch) => ({ ...glitch, imageEchoIds: imagesByGlitch.get(glitch.glitchId) ?? [] }))
   },
 )
 

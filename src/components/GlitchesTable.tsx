@@ -34,7 +34,21 @@ export function GlitchesTable({ glitches, canChangeStatus = false }: { glitches:
                 <td className="max-w-40 px-5 py-4">
                   <span className="block truncate" title={glitch.glitchId}>{glitch.glitchId}</span>
                 </td>
-                <td className="min-w-64 px-5 py-4 whitespace-pre-wrap [overflow-wrap:anywhere]">{glitch.description}</td>
+                <td className="min-w-64 px-5 py-4 [overflow-wrap:anywhere]">
+                  <p className="whitespace-pre-wrap">{glitch.description}</p>
+                  {glitch.imageEchoIds?.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {glitch.imageEchoIds.map((echoId, index) => (
+                        <a key={echoId} href={`/echo-images/${encodeURIComponent(echoId)}`} target="_blank" rel="noopener noreferrer"
+                          aria-label={`Bekijk afbeelding ${index + 1} bij ${glitch.glitchId} in een nieuw tabblad`}
+                          className="rounded-lg border border-line p-1 transition hover:border-accent focus-visible:outline-2 focus-visible:outline-accent">
+                          <img src={`/echo-images/${encodeURIComponent(echoId)}`} alt={`Afbeelding ${index + 1} bij de echo`}
+                            loading="lazy" className="h-20 w-28 rounded-md object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                </td>
                 <td className="px-5 py-4">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses[glitch.status]}`}>
                     {glitch.status}

@@ -57,13 +57,20 @@ maximaal 2000 tekens. De server gebruikt de ingelogde guardian en het huidige
 tijdstip. Elke melding maakt in één transactie een echo en een gekoppelde glitch
 met status `LEAKED` aan. Na het opslaan wordt het overzicht ververst.
 
+Bij een echo kan optioneel één JPG-, PNG- of WebP-afbeelding van maximaal 5 MB
+worden toegevoegd. Het formulier toont een voorbeeld en laat je de selectie
+verwijderen. Afbeeldingen staan bij de beschrijving in het overzicht; klik om ze
+op volledig formaat te openen. Ze worden in SQLite opgeslagen en zijn alleen
+voor ingelogde guardians toegankelijk. De server controleert grootte, MIME-type
+en bestandskenmerken. Echo, glitch en afbeelding worden samen opgeslagen.
+
 Commanders kunnen via de statuskeuze en **Opslaan** een glitch wijzigen naar
 `LEAKED`, `ASSESSING`, `CONTAINING` of `FIXED`. De server controleert de rol bij
 elke wijziging. Defenders zien de huidige status zonder bewerkingsknoppen.
 
 Voer `npm run test:workflow` uit voor de HTTP-integratietests. Deze gebruiken een
 tijdelijke database en testserver, en controleren onder andere validatie,
-sessiecontrole, transactierollback en commanderrechten. Bestaande gegevens
+sessiecontrole, transactierollback, commanderrechten en afbeeldingsuploads. Bestaande gegevens
 blijven behouden.
 
 ## Beoordeling

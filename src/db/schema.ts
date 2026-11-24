@@ -1,4 +1,4 @@
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { blob, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 // Relative import: drizzle-kit loads this file and doesn't resolve the `#/` alias.
 import { GLITCH_STATUSES } from '../lib/glitch.ts'
 
@@ -28,6 +28,12 @@ export const echoes = sqliteTable('echoes', {
   glitchId: text('glitch_id')
       .notNull()
       .references(() => glitches.glitchId),
+})
+
+export const echoImages = sqliteTable('echo_images', {
+  echoId: text('echo_id').primaryKey().references(() => echoes.echoId, { onDelete: 'cascade' }),
+  contentType: text('content_type').notNull(),
+  data: blob('data', { mode: 'buffer' }).notNull(),
 })
 
 // Credentials are separate so guardian data never includes password hashes.
