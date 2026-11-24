@@ -11,6 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:workflow": "node --test tests/echo-workflow.test.mjs",
+    "test:speech": "node --test tests/echo-speech.test.mjs",
     "db:push": "drizzle-kit push",
     "db:seed": "node src/db/seed.ts",
     "db:seed:accounts": "node src/db/seed-accounts.ts",

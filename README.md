@@ -64,6 +64,25 @@ op volledig formaat te openen. Ze worden in SQLite opgeslagen en zijn alleen
 voor ingelogde guardians toegankelijk. De server controleert grootte, MIME-type
 en bestandskenmerken. Echo, glitch en afbeelding worden samen opgeslagen.
 
+Via de microfoonknop rechtsonder in het beschrijvingsvak kun je Nederlands
+inspreken. Eerst hoor je “Defender... wachter van Achrona. Spreek nu je echo.
+Ik luister.” (of “Commander”, afhankelijk van je rol). De microfoon start nadat
+de instructie is uitgesproken.
+Druk opnieuw om te stoppen, controleer je tekst en kies **Echo melden**.
+Na succesvol opslaan spreekt de browser een Nederlandse bevestiging uit.
+De geanimeerde guardian **Auri** begeleidt je melding: het personage knippert,
+beweegt rustig en praat mee tijdens het daadwerkelijk afspelen van de stem.
+De mond- en golfanimaties stoppen bij het einde of annuleren van de audio.
+Bij verminderde beweging in de systeeminstellingen worden de animaties uitgezet.
+Auri gebruikt standaard **Ellen (nl-BE)**, met haar natuurlijke toonhoogte.
+Via **Stem beluisteren** kun je een voorbeeld horen. Als Ellen niet beschikbaar
+is, gebruikt de browser een andere Nederlandse stem. De plechtige formuleringen
+blijven behouden. Er is geen externe AI-spraakdienst aangesloten.
+Spraakherkenning vereist browserondersteuning en microfoontoestemming; wanneer
+die ontbreekt kun je blijven typen. De beschikbare stem wordt door je browser
+en besturingssysteem bepaald. `npm run test:speech` controleert de spraaklogica
+met gesimuleerde browser-API's, zonder de microfoon te activeren.
+
 Commanders kunnen via de statuskeuze en **Opslaan** een glitch wijzigen naar
 `LEAKED`, `ASSESSING`, `CONTAINING` of `FIXED`. De server controleert de rol bij
 elke wijziging. Defenders zien de huidige status zonder bewerkingsknoppen.

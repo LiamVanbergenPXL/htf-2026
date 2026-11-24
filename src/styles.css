@@ -43,3 +43,26 @@ body {
   background-color: var(--app);
   color: var(--fg);
 }
+
+/* Auri's face animates only while the speech API reports active playback. */
+.guardian-body { transform-origin: 70px 80px; animation: guardian-float 4s ease-in-out infinite; }
+.guardian-orb { animation: guardian-orbit 3s ease-in-out infinite; }
+.guardian-eyes { transform-box: fill-box; transform-origin: center; animation: guardian-blink 5.4s infinite; }
+.guardian-mouth { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.guardian-voice-bar { opacity: .25; }
+.echo-guardian-panel[data-state="speaking"] .guardian-mouth { opacity: 1; animation: guardian-talk .31s ease-in-out infinite alternate; }
+.echo-guardian-panel[data-state="speaking"] .guardian-smile { opacity: 0; }
+.echo-guardian-panel[data-state="speaking"] .guardian-voice-bar { opacity: .8; animation: guardian-wave .65s ease-in-out infinite alternate; }
+.echo-guardian-panel[data-state="listening"] .guardian-aura { animation: guardian-glow 1.6s ease-in-out infinite; }
+.guardian-listening-dot { animation: guardian-glow 1.2s ease-in-out infinite; }
+@keyframes guardian-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-4px) rotate(1deg); } }
+@keyframes guardian-orbit { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(4px); } }
+@keyframes guardian-blink { 0%, 43%, 47%, 100% { transform: scaleY(1); } 45% { transform: scaleY(.08); } }
+@keyframes guardian-talk { 0%, 30% { transform: scale(.8, .25); } 60% { transform: scale(1.05, 1); } 100% { transform: scale(.85, .55); } }
+@keyframes guardian-wave { from { transform: scaleY(.5); } to { transform: scaleY(1.8); } }
+@keyframes guardian-glow { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .guardian-body, .guardian-orb, .guardian-eyes,
+  .echo-guardian-panel .guardian-mouth, .echo-guardian-panel .guardian-voice-bar,
+  .echo-guardian-panel .guardian-aura, .guardian-listening-dot { animation: none !important; }
+}

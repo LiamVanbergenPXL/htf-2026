@@ -172,6 +172,9 @@ test('echo reporting and commander permissions through real HTTP server function
         assert.equal(response.status, 200)
         const html = await response.text()
         assert.match(html, /Echo melden/)
+        assert.match(html, /Beschrijving inspreken/)
+        assert.match(html, /Guardian van Achrona/)
+        assert.match(html, /Stem beluisteren/)
         assert.match(html, /Magic fading near the tower/)
         assert.equal(html.includes('Status wijzigen voor'), canEdit)
       }

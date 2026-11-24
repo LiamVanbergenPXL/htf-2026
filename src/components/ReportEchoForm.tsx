@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
+import { Mic, Square } from 'lucide-react'
+import { EchoGuardian } from '#/components/EchoGuardian'
 import { reportEcho } from '#/lib/echoes.functions'
 import { ECHO_IMAGE_TYPES, MAX_ECHO_DESCRIPTION_LENGTH, MAX_ECHO_IMAGE_BYTES } from '#/lib/echo'
+import { EchoDictation, speakEchoCreated, speakEchoPrompt, type SpeechWindow } from '#/lib/echo-speech'
 
-export function ReportEchoForm() {
+export function ReportEchoForm({ role }: { role: 'defender' | 'commander' }) {
   const router = useRouter()
   const submitEcho = useServerFn(reportEcho)
   const [description, setDescription] = useState('')
@@ -14,6 +17,56 @@ export function ReportEchoForm() {
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
   const imageInput = useRef<HTMLInputElement>(null)
+  const dictation = useRef<EchoDictation | null>(null)
+  const [speechSupported, setSpeechSupported] = useState<boolean | null>(null)
+  const [listening, setListening] = useState(false)
+  const [speechError, setSpeechError] = useState('')
+  const [prompting, setPrompting] = useState(false)
+  const cancelPrompt = useRef<(() => void) | null>(null)
+  const speechActive = listening || prompting
+  const [speaking, setSpeaking] = useState(false)
+  const [spokenText, setSpokenText] = useState('')
+  const playbackOptions = {
+    onStart: (text: string) => { setSpokenText(text); setSpeaking(true) },
+    onEnd: () => setSpeaking(false),
+  }
+
+  useEffect(() => {
+    const browser = window as SpeechWindow
+    // Warm up the browser's voice list without keeping unused selector state.
+    if ('speechSynthesis' in browser) browser.speechSynthesis.getVoices()
+    const RecognitionApi = browser.SpeechRecognition ?? browser.webkitSpeechRecognition
+    setSpeechSupported(Boolean(RecognitionApi))
+    if (RecognitionApi) {
+      dictation.current = new EchoDictation(RecognitionApi, MAX_ECHO_DESCRIPTION_LENGTH,
+        setDescription, setListening, setSpeechError)
+    }
+    return () => {
+      cancelPrompt.current?.()
+      dictation.current?.abort()
+      dictation.current = null
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+    }
+  }, [])
+
+  function toggleDictation() {
+    if (pending) return
+    if (prompting) {
+      cancelPrompt.current?.()
+      setPrompting(false)
+    } else if (listening) {
+      dictation.current?.stop()
+    } else {
+      setSuccess('')
+      setSpeechError('')
+      setPrompting(true)
+      cancelPrompt.current?.()
+      cancelPrompt.current = speakEchoPrompt(window, role, () => {
+        setPrompting(false)
+        dictation.current?.start(description)
+      }, playbackOptions)
+    }
+  }
 
   useEffect(() => {
     if (!image) {
@@ -48,9 +101,10 @@ export function ReportEchoForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (pending) return
+    if (pending || speechActive) return
     setError('')
     setSuccess('')
+    setSpeechError('')
     if (!description.trim()) {
       setError('Vul een beschrijving in.')
       return
@@ -68,6 +122,8 @@ export function ReportEchoForm() {
       setDescription('')
       removeImage()
       setSuccess('Echo gemeld. Er is een nieuwe glitch aangemaakt met status LEAKED.')
+      cancelPrompt.current?.()
+      cancelPrompt.current = speakEchoCreated(window, playbackOptions)
       try {
         await router.invalidate()
       } catch {
@@ -84,15 +140,32 @@ export function ReportEchoForm() {
     <section aria-labelledby="report-echo-title" className="rounded-2xl border border-line bg-panel p-6">
       <h2 id="report-echo-title" className="text-xl font-semibold">Echo melden</h2>
       <p className="mt-1 text-sm text-muted">Meld een afwijking in Achrona. Je melding wordt automatisch een nieuwe glitch.</p>
+      <EchoGuardian speaking={speaking} listening={listening} prompting={prompting} text={spokenText} success={Boolean(success)} />
       <form onSubmit={handleSubmit} aria-busy={pending} className="mt-5 flex flex-col gap-3">
         <label htmlFor="echo-description" className="text-sm font-medium">Beschrijving</label>
-        <textarea id="echo-description" name="description" value={description}
+        <div className="relative">
+          <textarea id="echo-description" name="description" value={description}
           onChange={(event) => setDescription(event.target.value)}
           required maxLength={MAX_ECHO_DESCRIPTION_LENGTH} rows={3} disabled={pending}
-          aria-describedby="echo-description-help"
-          className="w-full resize-y rounded-lg border border-line bg-white px-3 py-2 outline-accent disabled:opacity-60"
+          readOnly={speechActive} aria-describedby="echo-description-help echo-speech-status"
+          className="block w-full resize-y rounded-lg border border-line bg-white px-3 pt-2 pr-16 pb-14 outline-accent disabled:opacity-60"
           placeholder="Wat heb je opgemerkt?" />
+          <button type="button" onClick={toggleDictation}
+            disabled={pending || !speechSupported || (!speechActive && description.length >= MAX_ECHO_DESCRIPTION_LENGTH)}
+            aria-label={speechActive ? 'Stop inspreken' : 'Beschrijving inspreken'} aria-pressed={speechActive}
+            title={speechActive ? 'Stop inspreken' : 'Beschrijving inspreken'}
+            className={`absolute right-3 bottom-3 flex size-10 items-center justify-center rounded-full text-white shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 ${speechActive ? 'bg-red-600 hover:bg-red-700' : 'bg-accent hover:opacity-90'}`}>
+            {speechActive ? <Square aria-hidden="true" className="size-4" fill="currentColor" /> : <Mic aria-hidden="true" className="size-5" />}
+          </button>
+        </div>
         <p id="echo-description-help" className="text-xs text-muted">Maximaal {MAX_ECHO_DESCRIPTION_LENGTH} tekens. Je naam en het tijdstip worden automatisch toegevoegd.</p>
+        <p id="echo-speech-status" role="status" className="text-xs text-muted">
+          {prompting ? 'Luister naar de instructie. De microfoon start zodra de stem klaar is.'
+            : listening ? 'Microfoon actief. Spreek je beschrijving in en druk op stop wanneer je klaar bent.'
+            : speechSupported === false ? 'Spraakherkenning is niet beschikbaar in deze browser. Je kunt je beschrijving typen.'
+              : 'Gebruik de microfoon om in te spreken. Controleer je tekst voor je de echo meldt.'}
+        </p>
+        {speechError ? <p role="alert" className="text-sm text-red-700">{speechError}</p> : null}
         <fieldset className="mt-3 rounded-xl border border-dashed border-line bg-subtle/50 p-4" disabled={pending}>
           <legend className="px-2 text-sm font-medium">Afbeelding toevoegen <span className="font-normal text-muted">(optioneel)</span></legend>
           <label htmlFor="echo-image" className="mb-3 block text-sm text-muted">Toon de ernst van de situatie met een foto of screenshot.</label>
@@ -112,7 +185,7 @@ export function ReportEchoForm() {
         </fieldset>
         {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
         {success ? <p role="status" className="text-sm text-green-800">{success}</p> : null}
-        <button type="submit" disabled={pending || !description.trim()}
+        <button type="submit" disabled={pending || speechActive || !description.trim()}
           className="self-start rounded-lg bg-accent px-5 py-2.5 font-medium text-white transition hover:opacity-90 disabled:opacity-50">
           {pending ? 'Bezig met melden…' : 'Echo melden'}
         </button>

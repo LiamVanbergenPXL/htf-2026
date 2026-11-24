@@ -18,7 +18,7 @@ function OverviewPage() {
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-semibold text-fg">Overview</h1>
-      <ReportEchoForm />
+      {guardian ? <ReportEchoForm role={guardian.role} /> : null}
       <GlitchesTable glitches={glitches} canChangeStatus={guardian?.role === 'commander'} />
     </div>
   )
