@@ -221,6 +221,8 @@ test('echo reporting and commander permissions through real HTTP server function
         assert.match(html, /Vraag Auri/)
         assert.match(html, /Magic fading near the tower/)
         assert.equal(html.includes('Status wijzigen voor'), canEdit)
+        // Only defenders get glitches assigned, so only they get the one-click filter.
+        assert.equal(html.includes('Mijn glitches'), !canEdit)
       }
     })
 

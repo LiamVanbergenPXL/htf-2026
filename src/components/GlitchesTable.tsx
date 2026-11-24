@@ -1,4 +1,4 @@
-import { CircleHelp, Network, Radio, Sparkles, Tag } from 'lucide-react'
+import { CircleHelp, Network, Radio, Shield, Sparkles, Tag } from 'lucide-react'
 import { useServerFn } from '@tanstack/react-start'
 import { askAuri } from '#/lib/auri.functions'
 import { playerUrl } from '#/lib/player-slot'
@@ -80,11 +80,15 @@ const normalize = (value: string) => value.toLowerCase().normalize('NFD').replac
 export function GlitchesTable({ active = true, canUseAuri = false, speler, glitches, canChangeStatus = false, defenders = [], defenderId }: { active?: boolean; canUseAuri?: boolean; speler?: string; glitches: Glitch[]; canChangeStatus?: boolean; defenders?: { id: string; name: string }[]; defenderId?: string }) {
   const [selectedId, setSelectedId] = useState<string>()
   const [filters, setFilters] = useState(defaults)
+  // Defenders only: show just the glitches assigned to them.
+  const [mineOnly, setMineOnly] = useState(false)
+  const mineCount = defenderId ? glitches.filter((glitch) => glitch.assignedDefenderId === defenderId).length : 0
   const update = (key: keyof typeof defaults, value: string) =>
     setFilters((current) => ({ ...current, [key]: value }))
   const invalidRange = Boolean(filters.from && filters.to && filters.from > filters.to)
   const keywords = normalize(filters.query).trim().split(/\s+/).filter(Boolean)
   const visible = glitches.filter((glitch) => {
+    if (mineOnly && glitch.assignedDefenderId !== defenderId) return false
     if (invalidRange || (filters.status && glitch.status !== filters.status)) return false
     if (filters.type && filters.type !== (glitch.glitchType ?? 'untyped')) return false
     const typeLabel = glitch.glitchType ? GLITCH_TYPE_LABELS[glitch.glitchType] : 'Zonder type'
@@ -126,6 +130,14 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
   return (
     <section aria-labelledby="glitches-title" className="stat-block flex flex-col gap-4 p-6">
       <h2 id="glitches-title" className="tome-heading text-2xl">Glitches <span role="status" className="font-sans font-normal text-muted">({visible.length} van {glitches.length})</span></h2>
+      {defenderId ? (
+        <button type="button" aria-pressed={mineOnly} onClick={() => setMineOnly(!mineOnly)}
+          className={`inline-flex min-h-11 items-center gap-2 self-start rounded-full border-2 px-4 py-1.5 font-sc font-bold transition ${mineOnly
+            ? 'border-accent bg-accent text-[#fbf2dc]' : 'border-accent/60 bg-[#fffaf0] text-accent hover:border-accent'}`}>
+          <Shield aria-hidden="true" className="size-4" /> Mijn glitches
+          <span className={`rounded-full px-2 text-xs tabular-nums ${mineOnly ? 'bg-[#fbf2dc] text-accent' : 'bg-accent text-[#fbf2dc]'}`}>{mineCount}</span>
+        </button>
+      ) : null}
       {/* Two filters per row on phones; search gets the full row there. */}
       <div className="grid grid-cols-2 gap-3 border border-dashed border-[#a88a5c] bg-[#ecdcb6]/40 p-3 sm:p-4 lg:grid-cols-3 xl:grid-cols-5">
         <label className="col-span-2 grid gap-1 font-sc text-sm font-bold text-accent sm:col-span-1">
@@ -165,7 +177,7 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
           </select>
         </label>
         {invalidRange ? <p role="alert" className="col-span-2 text-sm font-semibold text-accent">De einddatum moet op of na de begindatum liggen.</p> : null}
-        <button type="button" onClick={() => setFilters(defaults)} className="justify-self-start self-end font-sc text-sm font-bold text-accent underline">
+        <button type="button" onClick={() => { setFilters(defaults); setMineOnly(false) }} className="justify-self-start self-end font-sc text-sm font-bold text-accent underline">
           Filters wissen
         </button>
       </div>
@@ -180,12 +192,18 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
             </tr>
           </thead>
           <tbody className="text-fg">
-            {visible.map((glitch) => (
+            {visible.map((glitch) => {
+              const TypeIcon = typeIcons[glitch.glitchType ?? 'untyped']
+              return (
               <tr key={glitch.glitchId} id={`glitch-${glitch.glitchId}`} className="scroll-mt-8 border-b border-dotted border-[#a88a5c] even:bg-[#ecdcb6]/40 target:bg-gilt/20">
                 <td data-label={columns[0]} className="max-w-40 px-4 py-4 align-top">
                   <span className="block truncate font-sc font-bold" title={glitch.glitchId}>{glitch.glitchId}</span>
                 </td>
                 <td data-label={columns[1]} data-stack className="min-w-64 px-4 py-4 align-top [overflow-wrap:anywhere]">
+                  <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-[#a88a5c] bg-[#fffaf0] px-2 py-0.5 font-sc text-xs font-bold text-muted">
+                    <TypeIcon aria-hidden="true" className="size-3.5" />
+                    {glitch.glitchType ? GLITCH_TYPE_LABELS[glitch.glitchType] : 'Zonder type'}
+                  </span>
                   <p className="whitespace-pre-wrap">{glitch.description}</p>
                   <p className="mt-1 text-xs text-muted">{glitch.assignedDefender ?? 'Niet toegewezen'}</p>
                   <GlitchAssignment key={glitch.assignedDefenderId ?? ''} glitch={glitch} defenders={defenders}
@@ -193,13 +211,7 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
                   <GlitchRunbook key={glitch.status} glitch={glitch} canUseAuri={canUseAuri} />
                   {glitch.imageEchoIds?.length ? (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <details className="mt-2 text-sm">
-                    <summary className="cursor-pointer font-semibold text-accent">Bekijk stappenplan</summary>
-                    <ol className="mt-2 list-decimal space-y-1 pl-5">
-                      {runbooks[glitch.status].map(step => <li key={step}>{step}</li>)}
-                    </ol>
-                  </details>
-                  {glitch.imageEchoIds.map((echoId, index) => (
+                      {glitch.imageEchoIds.map((echoId, index) => (
                         <a key={echoId} href={playerUrl(`/echo-images/${encodeURIComponent(echoId)}`, speler)} target="_blank" rel="noopener noreferrer"
                           aria-label={`Bekijk afbeelding ${index + 1} bij ${glitch.glitchId} in een nieuw tabblad`}
                           className="block border-4 border-[#fffaf0] shadow-md shadow-[#3c1e0a]/40 transition hover:-rotate-1 focus-visible:outline-2 focus-visible:outline-gilt">
@@ -229,7 +241,8 @@ export function GlitchesTable({ active = true, canUseAuri = false, speler, glitc
               )
             })}
             {visible.length === 0 ? (
-              <tr><td colSpan={columns.length} className="px-4 py-10 text-center italic text-muted">{glitches.length ? 'Geen glitches gevonden met deze filters.' : 'Er zijn nog geen glitches. Meld een echo om te beginnen.'}</td></tr>
+              <tr><td colSpan={columns.length} className="px-4 py-10 text-center italic text-muted">{mineOnly && mineCount === 0 ? 'Je hebt nog geen toegewezen glitches. Een commander kan ze aan je toewijzen.'
+                : glitches.length ? 'Geen glitches gevonden met deze filters.' : 'Er zijn nog geen glitches. Meld een echo om te beginnen.'}</td></tr>
             ) : null}
           </tbody>
         </table>
