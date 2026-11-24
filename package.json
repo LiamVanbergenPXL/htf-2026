@@ -12,6 +12,9 @@
     "preview": "vite preview",
     "test:workflow": "node --test tests/echo-workflow.test.mjs",
     "test:speech": "node --test tests/echo-speech.test.mjs",
+    "test:ai": "node --test tests/auri-ai.test.mjs",
+    "ai:serve": "OLLAMA_NO_CLOUD=1 OLLAMA_CONTEXT_LENGTH=8192 ollama serve",
+    "ai:pull": "ollama pull qwen3.5:4b",
     "db:push": "drizzle-kit push",
     "db:seed": "node src/db/seed.ts",
     "db:seed:accounts": "node src/db/seed-accounts.ts",
@@ -19,11 +22,13 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.94",
     "@tailwindcss/vite": "^4.3.5",
     "@tanstack/react-devtools": "0.10.14",
     "@tanstack/react-router": "1.170.46",
     "@tanstack/react-router-devtools": "1.167.3",
     "@tanstack/react-start": "1.169.5",
+    "ai": "^7.0.181",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.71.0",

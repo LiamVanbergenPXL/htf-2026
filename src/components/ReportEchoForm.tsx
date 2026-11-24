@@ -3,9 +3,10 @@ import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { Mic, Square } from 'lucide-react'
 import { EchoGuardian } from '#/components/EchoGuardian'
+import { AuriChat } from '#/components/AuriChat'
 import { reportEcho } from '#/lib/echoes.functions'
 import { ECHO_IMAGE_TYPES, MAX_ECHO_DESCRIPTION_LENGTH, MAX_ECHO_IMAGE_BYTES } from '#/lib/echo'
-import { EchoDictation, speakEchoCreated, speakEchoPrompt, type SpeechWindow } from '#/lib/echo-speech'
+import { EchoDictation, speakAuriAnswer, speakEchoCreated, speakEchoPrompt, type SpeechWindow } from '#/lib/echo-speech'
 
 export function ReportEchoForm({ role }: { role: 'defender' | 'commander' }) {
   const router = useRouter()
@@ -66,6 +67,17 @@ export function ReportEchoForm({ role }: { role: 'defender' | 'commander' }) {
         dictation.current?.start(description)
       }, playbackOptions)
     }
+  }
+
+  function readAuriAnswer(text: string) {
+    if (pending || speechActive) return
+    cancelPrompt.current?.()
+    cancelPrompt.current = speakAuriAnswer(window, text, playbackOptions)
+  }
+
+  function stopVoice() {
+    cancelPrompt.current?.()
+    setPrompting(false)
   }
 
   useEffect(() => {
@@ -141,6 +153,7 @@ export function ReportEchoForm({ role }: { role: 'defender' | 'commander' }) {
       <h2 id="report-echo-title" className="text-xl font-semibold">Echo melden</h2>
       <p className="mt-1 text-sm text-muted">Meld een afwijking in Achrona. Je melding wordt automatisch een nieuwe glitch.</p>
       <EchoGuardian speaking={speaking} listening={listening} prompting={prompting} text={spokenText} success={Boolean(success)} />
+      <AuriChat busy={pending || speechActive} speaking={speaking} onRead={readAuriAnswer} onStop={stopVoice} />
       <form onSubmit={handleSubmit} aria-busy={pending} className="mt-5 flex flex-col gap-3">
         <label htmlFor="echo-description" className="text-sm font-medium">Beschrijving</label>
         <div className="relative">

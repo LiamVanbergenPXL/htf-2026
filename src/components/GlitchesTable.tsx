@@ -30,7 +30,7 @@ export function GlitchesTable({ glitches, canChangeStatus = false }: { glitches:
           </thead>
           <tbody className="text-fg">
             {glitches.map((glitch) => (
-              <tr key={glitch.glitchId} className="border-b border-line">
+              <tr key={glitch.glitchId} id={`glitch-${glitch.glitchId}`} className="scroll-mt-8 border-b border-line target:bg-violet-50">
                 <td className="max-w-40 px-5 py-4">
                   <span className="block truncate" title={glitch.glitchId}>{glitch.glitchId}</span>
                 </td>

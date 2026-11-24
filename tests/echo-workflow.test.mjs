@@ -16,7 +16,7 @@ import { toJSON } from 'seroval'
 test('echo reporting and commander permissions through real HTTP server functions', { timeout: 60000 }, async (t) => {
   const dir = await mkdtemp(join(tmpdir(), 'htf-echo-test-'))
   const databasePath = join(dir, 'test.db')
-  const env = { ...process.env, NODE_ENV: 'development', DB_FILE_NAME: databasePath }
+  const env = { ...process.env, NODE_ENV: 'development', DB_FILE_NAME: databasePath, OLLAMA_BASE_URL: 'http://127.0.0.1:1/v1' }
   let server
   let sqlite
   let logs = ''
@@ -48,7 +48,7 @@ test('echo reporting and commander permissions through real HTTP server function
     }
     assert.ok(ready, logs)
     const endpoints = {}
-    for (const file of ['auth', 'echoes', 'glitches']) {
+    for (const file of ['auth', 'echoes', 'glitches', 'auri']) {
       const source = await (await fetch(`${base}/src/lib/${file}.functions.ts`)).text()
       for (const match of source.matchAll(/export const (\w+) = [^\n]*createClientRpc\("([^"]+)"/g)) {
         endpoints[match[1]] = `${base}/_serverFn/${match[2]}`
@@ -76,6 +76,16 @@ test('echo reporting and commander permissions through real HTTP server function
     // noinspection SqlNoDataSourceInspection
     const count = (table) => sqlite.prepare(`SELECT count(*) AS n FROM ${table}`).get().n
     let glitchId
+
+    await t.test('AI chat requires login and reports an offline Ollama without making up answers', async () => {
+      const anonymous = await rpc('askAuri', { question: 'Welke incidenten zijn actief?' })
+      assert.match(anonymous.body, /login/)
+      for (const cookie of [defender, commander]) {
+        const result = await rpc('askAuri', { question: 'Welke incidenten zijn actief?' }, cookie)
+        assert.match(result.body, /Ollama/)
+        assert.equal(count('glitches'), 0)
+      }
+    })
 
     await t.test('anonymous reporting and status changes are blocked', async () => {
       for (const [name, input] of [
@@ -174,7 +184,7 @@ test('echo reporting and commander permissions through real HTTP server function
         assert.match(html, /Echo melden/)
         assert.match(html, /Beschrijving inspreken/)
         assert.match(html, /Guardian van Achrona/)
-        assert.match(html, /Stem beluisteren/)
+        assert.match(html, /Vraag Auri/)
         assert.match(html, /Magic fading near the tower/)
         assert.equal(html.includes('Status wijzigen voor'), canEdit)
       }

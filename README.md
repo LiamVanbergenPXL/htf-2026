@@ -92,6 +92,52 @@ tijdelijke database en testserver, en controleren onder andere validatie,
 sessiecontrole, transactierollback, commanderrechten en afbeeldingsuploads. Bestaande gegevens
 blijven behouden.
 
+### Auri als lokale AI-chatbot
+
+Auri gebruikt een echt taalmodel via Ollama op je eigen computer. Er is geen
+cloud-API of betaalde API-sleutel nodig. Elke vraag krijgt een nieuwe snapshot
+met glitches, statussen en gekoppelde echoes. Afbeeldingsbestanden en
+accountgeheimen worden niet aan het model doorgegeven. De chat kan geen
+incidenten wijzigen en er is nog geen aparte alertbron gekoppeld.
+
+Eenmalige installatie op macOS:
+
+```bash
+brew install ollama
+```
+
+Start Ollama in een eigen terminal en laat die draaien:
+
+```bash
+npm run ai:serve
+```
+
+Download daarna het model (ongeveer 4 GB) en start de app:
+
+```bash
+npm run ai:pull
+npm run dev
+```
+
+Open **Vraag Auri** boven het meldformulier. Stel bijvoorbeeld “Welke incidenten
+zijn actief?” of “Wat weten we over GL-0142?”. Antwoorden tonen links naar de
+gebruikte incidenten. **Voorlezen** laat Ellen het antwoord uitspreken terwijl
+Auri's mond beweegt. Je kunt een vervolgvraag stellen of een nieuw gesprek starten.
+De eerste vraag kan wat langer duren omdat het model moet laden.
+
+De standaardinstellingen zijn `http://127.0.0.1:11434/v1` en `qwen3.5:4b`.
+Ze werken zonder `.env`; kopieer desgewenst `.env.example` naar `.env` om
+`OLLAMA_BASE_URL` of `AURI_MODEL` aan te passen. Herstart de devserver na een
+wijziging. Bij een productiebuild stel je deze variabelen in op de server.
+Ollama draait met cloudfuncties uitgeschakeld en luistert standaard alleen lokaal.
+
+De meegegeven context is begrensd; globale statustotalen blijven volledig.
+AI-antwoorden kunnen fouten bevatten. Auri wordt geïnstrueerd ontbrekende
+informatie te benoemen. Alleen incident-ID’s uit de actuele snapshot krijgen
+een klikbare bronverwijzing. `npm run test:ai` test context en antwoordvalidatie met een gesimuleerd
+model. `npm run test:workflow` controleert ook toegangscontrole en een onbereikbare
+Ollama-server zonder echte modelaanroepen.
+
 ## Beoordeling
 > Hoe wij beoordelen wordt voor de start van de hackathon met alle studenten gedeeld, zodat dit meteen duidelijk is voor iedereen.
 

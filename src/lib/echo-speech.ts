@@ -182,7 +182,7 @@ function speakMessage(browser: SpeechBrowser, text: string, onComplete?: () => v
     timer = setTimeout(() => {
       try { browser.speechSynthesis.cancel() } catch { /* audio unavailable */ }
       finish()
-    }, 12000)
+    }, Math.min(600000, Math.max(12000, text.length * 100)))
     browser.speechSynthesis.speak(utterance)
   } catch {
     // Audio feedback must never block dictation or make a save appear to fail.
@@ -198,4 +198,8 @@ export function speakEchoCreated(browser: SpeechBrowser, options?: SpeechPlaybac
 export function speakEchoPrompt(browser: SpeechBrowser, role: 'defender' | 'commander', onReady: () => void, options?: SpeechPlaybackOptions) {
   const name = role === 'commander' ? 'Commander' : 'Defender'
   return speakMessage(browser, `${name}... wachter van Achrona. Spreek nu je echo. Ik luister.`, onReady, options)
+}
+
+export function speakAuriAnswer(browser: SpeechBrowser, text: string, options?: SpeechPlaybackOptions) {
+  return speakMessage(browser, text, undefined, options)
 }
