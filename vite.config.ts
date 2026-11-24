@@ -32,7 +32,16 @@ const config = defineConfig({
       },
     }),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      router: {
+        routeTreeFileHeader: [
+          '/* eslint-disable */',
+          '// @ts-nocheck',
+          // The Start generator includes a type import used only with a custom start entry.
+          '// noinspection JSUnusedGlobalSymbols,ES6UnusedImports',
+        ],
+      },
+    }),
     viteReact(),
   ],
 })
